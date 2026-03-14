@@ -108,7 +108,7 @@ create policy "embeddings: update own" on embeddings for update
 -- ── Semantic search function ──────────────────────────────────────────────────
 
 create or replace function search_notes_by_embedding(
-  query_embedding vector(768),
+  query_embedding extensions.vector(768),
   match_threshold float   default 0.7,
   match_count     int     default 10,
   p_user_id       uuid    default null
@@ -123,6 +123,7 @@ returns table (
   similarity float
 )
 language sql stable
+set search_path = public, extensions
 as $$
   select
     n.id,
