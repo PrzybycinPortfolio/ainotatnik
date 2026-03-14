@@ -1,0 +1,26 @@
+{
+  "name": "ai-notatnik",
+  "version": "1.0.0",
+  "description": "AI Note-taking app with semantic search and MCP integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
+    "mcp": "ts-node mcp/server.ts",
+    "generate-embeddings": "ts-node scripts/generateEmbeddings.ts"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@supabase/supabase-js": "^2.47.0",
+    "dotenv": "^16.4.5",
+    "langsmith": "^0.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}

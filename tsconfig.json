@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": [
+    "index.ts",
+    "langsmithLogger.ts",
+    "types/**/*.ts",
+    "config/**/*.ts",
+    "db/**/*.ts",
+    "ai/**/*.ts",
+    "services/**/*.ts",
+    "mcp/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
