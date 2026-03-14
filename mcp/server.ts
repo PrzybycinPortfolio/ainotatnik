@@ -15,48 +15,55 @@ const server = new McpServer({
   version: '1.0.0',
 });
 
+// Helper that provides a clean API while isolating TS2589 caused by MCP SDK's
+// deep conditional types in registerTool<AnySchema>.
+function defineTool<T extends z.ZodObject<z.ZodRawShape>>(
+  name: string,
+  description: string,
+  inputSchema: T,
+  handler: (args: z.infer<T>) => Promise<{ content: { type: 'text'; text: string }[] }>
+): void {
+  // @ts-expect-error TS2589 – registerTool's ToolCallback<AnySchema> conditional type
+  // causes excessively deep instantiation; runtime behaviour is correct.
+  server.registerTool(name, { description, inputSchema }, handler);
+}
+
 // ── Note management ───────────────────────────────────────────────────────────
 
-server.registerTool(
+defineTool(
   'add_note',
-  {
-    description: 'Create a new note for the user',
-    inputSchema: {
-      user_id: z.string().describe('User ID'),
-      title: z.string().describe('Note title'),
-      content: z.string().describe('Note content'),
-    },
-  },
+  'Create a new note for the user',
+  z.object({
+    user_id: z.string().describe('User ID'),
+    title: z.string().describe('Note title'),
+    content: z.string().describe('Note content'),
+  }),
   async (args) => {
     const text = await addNoteTool(args);
     return { content: [{ type: 'text', text }] };
   }
 );
 
-server.registerTool(
+defineTool(
   'update_note',
-  {
-    description: 'Edit an existing note',
-    inputSchema: {
-      id: z.string().describe('Note ID to update'),
-      title: z.string().optional().describe('New title'),
-      content: z.string().optional().describe('New content'),
-    },
-  },
+  'Edit an existing note',
+  z.object({
+    id: z.string().describe('Note ID to update'),
+    title: z.string().optional().describe('New title'),
+    content: z.string().optional().describe('New content'),
+  }),
   async (args) => {
     const text = await updateNoteTool(args);
     return { content: [{ type: 'text', text }] };
   }
 );
 
-server.registerTool(
+defineTool(
   'delete_note',
-  {
-    description: 'Delete a note by ID',
-    inputSchema: {
-      id: z.string().describe('Note ID to delete'),
-    },
-  },
+  'Delete a note by ID',
+  z.object({
+    id: z.string().describe('Note ID to delete'),
+  }),
   async (args) => {
     const text = await deleteNoteTool(args);
     return { content: [{ type: 'text', text }] };
@@ -65,46 +72,40 @@ server.registerTool(
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
-server.registerTool(
+defineTool(
   'list_notes',
-  {
-    description: 'List all notes for a user',
-    inputSchema: {
-      user_id: z.string().describe('User ID'),
-    },
-  },
+  'List all notes for a user',
+  z.object({
+    user_id: z.string().describe('User ID'),
+  }),
   async (args) => {
     const text = await listNotesTool(args);
     return { content: [{ type: 'text', text }] };
   }
 );
 
-server.registerTool(
+defineTool(
   'search_notes',
-  {
-    description: 'Search notes by keyword in title or content',
-    inputSchema: {
-      user_id: z.string().describe('User ID'),
-      query: z.string().describe('Search keyword or phrase'),
-    },
-  },
+  'Search notes by keyword in title or content',
+  z.object({
+    user_id: z.string().describe('User ID'),
+    query: z.string().describe('Search keyword or phrase'),
+  }),
   async (args) => {
     const text = await searchNotesTool(args);
     return { content: [{ type: 'text', text }] };
   }
 );
 
-server.registerTool(
+defineTool(
   'semantic_search',
-  {
-    description: 'Find notes by meaning using vector similarity search',
-    inputSchema: {
-      user_id: z.string().describe('User ID'),
-      query: z.string().describe('Natural language query'),
-      match_threshold: z.number().min(0).max(1).optional().describe('Similarity threshold (0-1)'),
-      match_count: z.number().int().positive().optional().describe('Max number of results'),
-    },
-  },
+  'Find notes by meaning using vector similarity search',
+  z.object({
+    user_id: z.string().describe('User ID'),
+    query: z.string().describe('Natural language query'),
+    match_threshold: z.number().min(0).max(1).optional().describe('Similarity threshold (0-1)'),
+    match_count: z.number().int().positive().optional().describe('Max number of results'),
+  }),
   async (args) => {
     const text = await semanticSearchTool(args);
     return { content: [{ type: 'text', text }] };
@@ -113,15 +114,13 @@ server.registerTool(
 
 // ── AI analysis ───────────────────────────────────────────────────────────────
 
-server.registerTool(
+defineTool(
   'summarize_notes',
-  {
-    description: 'Generate an AI summary of notes',
-    inputSchema: {
-      user_id: z.string().describe('User ID'),
-      note_ids: z.array(z.string()).optional().describe('Specific note IDs to summarize. If omitted, summarizes all notes.'),
-    },
-  },
+  'Generate an AI summary of notes',
+  z.object({
+    user_id: z.string().describe('User ID'),
+    note_ids: z.array(z.string()).optional().describe('Specific note IDs to summarize. If omitted, summarizes all.'),
+  }),
   async (args) => {
     const text = await summarizeNotesTool(args);
     return { content: [{ type: 'text', text }] };
