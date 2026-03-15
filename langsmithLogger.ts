@@ -1,26 +1,21 @@
+import { traceable as langsmithTraceable } from 'langsmith/traceable';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
 const isEnabled = !!process.env.LANGSMITH_API_KEY;
 
-export function traceable<T extends (...args: unknown[]) => Promise<unknown>>(
+type AnyAsyncFn = (...args: unknown[]) => Promise<unknown>;
+
+export function traceable<T extends AnyAsyncFn>(
   fn: T,
   metadata: { name: string; runType?: string }
 ): T {
   if (!isEnabled) return fn;
 
-  return (async (...args: Parameters<T>) => {
-    const start = Date.now();
-    try {
-      const result = await fn(...args);
-      const duration = Date.now() - start;
-      console.log(`[LangSmith] ${metadata.name} completed in ${duration}ms`);
-      return result;
-    } catch (err) {
-      console.error(`[LangSmith] ${metadata.name} failed:`, err);
-      throw err;
-    }
+  return langsmithTraceable(fn, {
+    name: metadata.name,
+    run_type: (metadata.runType as 'llm' | 'chain' | 'tool' | 'retriever' | 'embedding') ?? 'chain',
   }) as T;
 }
 
