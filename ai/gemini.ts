@@ -9,7 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export function createChatModel() {
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-pro',
     systemInstruction: SYSTEM_PROMPT,
   });
 }
@@ -34,7 +34,7 @@ async function _generateResponse(
 
 async function _generateText(prompt: string): Promise<string> {
   log('generateText', { promptLength: prompt.length });
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
   const result = await model.generateContent(prompt);
   return result.response.text();
 }

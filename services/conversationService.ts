@@ -1,7 +1,7 @@
 import * as db from '../db/queries';
 import { generateResponse, messagesToHistory } from '../ai/gemini';
 import { buildContextPrompt } from '../ai/prompts';
-import { searchBySemantic } from './noteService';
+import { searchBySemantic, createNote } from './noteService';
 import { log } from '../langsmithLogger';
 import type { Conversation, Message } from '../types';
 
@@ -36,7 +36,19 @@ export async function chat(
   const geminiHistory = messagesToHistory(pastMessages);
   const response = await generateResponse(userMessage, geminiHistory, contextPrompt);
 
-  await db.addMessage(conversationId, 'model', response);
-  log('chat.done', { responseLength: response.length });
-  return response;
+  const actionMatch = response.match(/\[ACTION:CREATE_NOTE\]([\s\S]*?)\[\/ACTION\]/);
+  if (actionMatch) {
+    try {
+      const { title, content } = JSON.parse(actionMatch[1]);
+      await createNote({ user_id: userId, title, content });
+      log('chat.noteCreated', { title });
+    } catch (err) {
+      console.warn('Failed to create note from action:', err);
+    }
+  }
+
+  const cleanResponse = response.replace(/\[ACTION:CREATE_NOTE\][\s\S]*?\[\/ACTION\]\n?/g, '');
+  await db.addMessage(conversationId, 'model', cleanResponse);
+  log('chat.done', { responseLength: cleanResponse.length });
+  return cleanResponse;
 }
