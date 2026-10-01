@@ -57,12 +57,20 @@ export async function deleteNote(id: string): Promise<void> {
   if (error) throw new Error(`deleteNote: ${error.message}`);
 }
 
+// Escapes characters with special meaning in a PostgREST filter value:
+// `,`, `.`, `(`, `)` can break out of the .or() filter list, and `%`, `_`
+// are SQL LIKE wildcards that would otherwise let user input broaden the match.
+function escapePostgrestLikeValue(value: string): string {
+  return value.replace(/[\\,.()%_]/g, (c) => `\\${c}`);
+}
+
 export async function searchNotesByText(userId: string, query: string): Promise<Note[]> {
+  const safeQuery = escapePostgrestLikeValue(query);
   const { data, error } = await supabase
     .from('notes')
     .select('*')
     .eq('user_id', userId)
-    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .or(`title.ilike.%${safeQuery}%,content.ilike.%${safeQuery}%`)
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(`searchNotesByText: ${error.message}`);
