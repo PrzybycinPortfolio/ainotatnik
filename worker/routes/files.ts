@@ -62,4 +62,31 @@ files.post('/', async (c) => {
   return c.json(fileRow, 202);
 });
 
+// Deletes the stored object, the invoices extracted from it and the file row.
+// RLS scopes every query to the caller, so another user's id simply 404s.
+files.delete('/:id', async (c) => {
+  const supabase = c.get('supabase');
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'invalid file id' }, 400);
+
+  const { data: fileRow, error: selectErr } = await supabase
+    .from('files')
+    .select('id, storage_path')
+    .eq('id', id)
+    .maybeSingle();
+  if (selectErr) return c.json({ error: selectErr.message }, 500);
+  if (!fileRow) return c.json({ error: 'file not found' }, 404);
+
+  const { error: storageErr } = await supabase.storage.from(STORAGE_BUCKET).remove([fileRow.storage_path]);
+  if (storageErr) return c.json({ error: storageErr.message }, 500);
+
+  const { error: invoicesErr } = await supabase.from('invoices').delete().eq('file_id', id);
+  if (invoicesErr) return c.json({ error: invoicesErr.message }, 500);
+
+  const { error: deleteErr } = await supabase.from('files').delete().eq('id', id);
+  if (deleteErr) return c.json({ error: deleteErr.message }, 500);
+
+  return c.body(null, 204);
+});
+
 export default files;

@@ -396,3 +396,23 @@
     flex-wrap: wrap;
   }
 }
+
+.delete-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #d9484f;
+  background: transparent;
+  color: #d9484f;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.delete-btn:hover:not(:disabled) {
+  background: #d9484f;
+  color: #fff;
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

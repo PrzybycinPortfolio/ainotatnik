@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiGet, apiUpload } from '../lib/api';
+import { apiDelete, apiGet, apiUpload } from '../lib/api';
 import type { FileRow } from '../types';
 
 const STATUS_LABELS: Record<FileRow['status'], string> = {
@@ -13,6 +13,7 @@ export function FilesPage() {
   const [files, setFiles] = useState<FileRow[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,6 +46,21 @@ export function FilesPage() {
     }
   }
 
+  async function handleDelete(file: FileRow) {
+    if (!confirm(`Usunąć plik "${file.filename}"? Faktury odczytane z tego pliku też zostaną usunięte.`)) return;
+
+    setDeletingId(file.id);
+    setError(null);
+    try {
+      await apiDelete(`/files/${file.id}`);
+      setFiles((prev) => prev.filter((f) => f.id !== file.id));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="files-page">
       <div className="files-header">
@@ -73,6 +89,7 @@ export function FilesPage() {
             <th>Plik</th>
             <th>Status</th>
             <th>Wgrano</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -84,11 +101,16 @@ export function FilesPage() {
                 {f.status === 'error' && f.error_message && <div className="file-error-detail">{f.error_message}</div>}
               </td>
               <td>{new Date(f.created_at).toLocaleString('pl-PL')}</td>
+              <td>
+                <button className="delete-btn" onClick={() => handleDelete(f)} disabled={deletingId === f.id}>
+                  {deletingId === f.id ? 'Usuwanie…' : 'Usuń'}
+                </button>
+              </td>
             </tr>
           ))}
           {files.length === 0 && (
             <tr>
-              <td colSpan={3} className="chat-empty">
+              <td colSpan={4} className="chat-empty">
                 Brak wgranych plików.
               </td>
             </tr>
