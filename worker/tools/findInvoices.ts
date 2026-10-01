@@ -22,6 +22,7 @@ interface InvoiceRow {
   net_amount: number | null;
   category: string | null;
   is_business: boolean | null;
+  classification_reason: string | null;
   excluded: boolean;
 }
 
@@ -50,7 +51,7 @@ export const findInvoicesTool: Tool<Input, Output> = {
   async execute(input, ctx) {
     let query = ctx.supabase
       .from('invoices')
-      .select('id, invoice_number, vendor_name, issue_date, net_amount, category, is_business, excluded');
+      .select('id, invoice_number, vendor_name, issue_date, net_amount, category, is_business, classification_reason, excluded');
 
     if (input.vendor_name) query = query.ilike('vendor_name', `%${escapeLikeValue(input.vendor_name)}%`);
     if (input.category) query = query.ilike('category', `%${escapeLikeValue(input.category)}%`);

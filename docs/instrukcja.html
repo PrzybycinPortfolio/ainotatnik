@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>AI Notatnik — instrukcja użytkownika</title>
+<style>
+  @page { size: A4; margin: 18mm 18mm 20mm; }
+  :root { --accent: #aa3bff; --accent-bg: #f5ebff; --text: #2b2b33; --muted: #6b6b76; --border: #e3e0ea; --warn: #b4232c; --warn-bg: #fdeeee; --ok-bg: #edf8f0; --ok: #1d7a3e; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; color: var(--text); font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3 { line-height: 1.25; color: #1a1a22; }
+  h2 { font-size: 17pt; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--accent); break-after: avoid; }
+  h3 { font-size: 12pt; margin: 18px 0 6px; color: var(--accent); break-after: avoid; }
+  p { margin: 0 0 8px; }
+  ul, ol { margin: 0 0 8px; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+  section { break-before: page; }
+  code, .ui { font-family: "Cascadia Mono", Consolas, monospace; font-size: 9.5pt; background: #f3f2f6; padding: 1px 5px; border-radius: 4px; }
+  .ui { font-family: inherit; font-size: 10pt; font-weight: 600; background: var(--accent-bg); color: #5d1a99; }
+
+  /* Cover */
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: center; }
+  .cover .badge { display: inline-block; font-size: 10pt; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 14px; }
+  .cover h1 { font-size: 40pt; margin: 0 0 10px; }
+  .cover .lead { font-size: 14pt; color: var(--muted); max-width: 140mm; margin-bottom: 30px; }
+  .cover .url { font-size: 12pt; padding: 10px 14px; border: 1.5px solid var(--accent); border-radius: 8px; display: inline-block; color: #5d1a99; font-weight: 600; }
+  .cover .bar { height: 6px; width: 70mm; background: var(--accent); border-radius: 3px; margin-bottom: 26px; }
+  .cover .meta { margin-top: auto; color: var(--muted); font-size: 9.5pt; }
+
+  /* TOC */
+  .toc ol { padding-left: 0; list-style: none; counter-reset: toc; }
+  .toc li { counter-increment: toc; display: flex; gap: 10px; padding: 7px 0; border-bottom: 1px dotted var(--border); font-size: 11pt; }
+  .toc li::before { content: counter(toc); font-weight: 700; color: var(--accent); width: 18px; }
+  .toc li span { color: var(--muted); margin-left: auto; font-size: 9.5pt; }
+
+  /* Boxes */
+  .box { border-radius: 8px; padding: 10px 14px; margin: 10px 0; break-inside: avoid; }
+  .tip { background: var(--accent-bg); border-left: 4px solid var(--accent); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+  .ok { background: var(--ok-bg); border-left: 4px solid var(--ok); }
+  .box b:first-child { display: block; margin-bottom: 2px; }
+
+  /* Chat example */
+  .chat { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin: 10px 0 12px; background: #fbfbfd; break-inside: avoid; }
+  .chat .title { font-size: 8.5pt; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+  .msg { max-width: 84%; padding: 7px 11px; border-radius: 10px; margin-bottom: 6px; font-size: 9.8pt; }
+  .msg.user { margin-left: auto; background: var(--accent); color: #fff; }
+  .msg.ai { background: #ececf2; }
+  .msg.err { background: #fff; border: 1px solid var(--warn); color: var(--warn); }
+  .msg small { display: block; opacity: .85; font-size: 8.5pt; }
+
+  /* Steps */
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps li { counter-increment: step; position: relative; padding-left: 32px; margin-bottom: 8px; }
+  .steps li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 700; font-size: 9.5pt; display: flex; align-items: center; justify-content: center; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.8pt; break-inside: avoid; }
+  th { text-align: left; background: #f3f0f8; padding: 6px 8px; border-bottom: 2px solid var(--accent); }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; break-inside: avoid; }
+  .card h4 { margin: 0 0 4px; font-size: 10.5pt; }
+  .card p { font-size: 9.6pt; margin: 0; color: #44444e; }
+
+  /* UI sketch */
+  .sketch { border: 1.5px solid #cfcbd8; border-radius: 10px; overflow: hidden; margin: 10px 0; font-size: 9pt; break-inside: avoid; }
+  .sketch .top { display: flex; gap: 6px; padding: 8px 10px; border-bottom: 1px solid #e5e2ec; align-items: center; }
+  .sketch .top b { margin-right: auto; font-size: 10pt; }
+  .sketch .tab { padding: 3px 10px; border-radius: 6px; }
+  .sketch .tab.on { background: var(--accent-bg); color: #5d1a99; font-weight: 600; }
+  .sketch .body { display: flex; min-height: 120px; }
+  .sketch .side { width: 34%; border-right: 1px solid #e5e2ec; padding: 8px; background: #faf9fc; }
+  .sketch .side .new { background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 8px; text-align: center; margin-bottom: 6px; }
+  .sketch .side .item { padding: 3px 6px; border-radius: 5px; display: flex; }
+  .sketch .side .item.on { background: var(--accent-bg); }
+  .sketch .side .item span { margin-left: auto; }
+  .sketch .main { flex: 1; padding: 8px; display: flex; flex-direction: column; }
+  .sketch .main .spacer { flex: 1; }
+  .sketch .input { display: flex; gap: 6px; align-items: center; }
+  .sketch .input .field { flex: 1; border: 1px solid #d8d4e0; border-radius: 6px; padding: 4px 8px; color: #999; }
+  .sketch .input .btn { background: var(--accent); color: #fff; border-radius: 6px; padding: 4px 10px; }
+  .sketch .input .clip { border: 1px solid #d8d4e0; border-radius: 6px; padding: 3px 7px; }
+  .callout { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── Okładka ───────────── -->
+<div class="cover">
+  <div class="badge">Instrukcja użytkownika</div>
+  <h1>AI Notatnik</h1>
+  <div class="bar"></div>
+  <p class="lead">Twój osobisty notatnik z asystentem AI: notatki, faktury i koszty uzyskania przychodu, analiza dokumentów z komputera — w jednym czacie.</p>
+  <div><span class="url">https://ai-notatnik.pages.dev</span></div>
+  <p class="meta">Wersja z października 2026 · Aplikacja działa w przeglądarce — nie wymaga instalacji.</p>
+</div>
+
+<!-- ───────────── Spis treści ───────────── -->
+<section class="toc">
+  <h2>Spis treści</h2>
+  <ol>
+    <li>Pierwsze kroki — konto i logowanie <span>str. 3</span></li>
+    <li>Czat z asystentem AI <span>str. 4</span></li>
+    <li>Notatki — zapisywanie i wyszukiwanie <span>str. 5</span></li>
+    <li>Faktury i koszty uzyskania przychodu (KUP) <span>str. 6</span></li>
+    <li>Analiza dokumentu z komputera (📎) <span>str. 8</span></li>
+    <li>Wyszukiwanie przepisów prawa <span>str. 10</span></li>
+    <li>Prywatność i bezpieczeństwo <span>str. 11</span></li>
+    <li>Rozwiązywanie problemów <span>str. 12</span></li>
+    <li>Ściąga — gotowe pytania do skopiowania <span>str. 13</span></li>
+  </ol>
+
+  <h3>Co potrafi aplikacja — w skrócie</h3>
+  <div class="two">
+    <div class="card"><h4>📝 Notatki</h4><p>Dyktujesz notatkę w czacie, a potem znajdujesz ją pytaniem w stylu „co ustaliłem z księgową?” — nawet jeśli nie pamiętasz dokładnych słów.</p></div>
+    <div class="card"><h4>🧾 Faktury i KUP</h4><p>Wgrywasz faktury, AI odczytuje kwoty, kontrahenta i datę, a potem liczy koszty uzyskania przychodu za wybrany okres.</p></div>
+    <div class="card"><h4>📎 Dokument z komputera</h4><p>Wskazujesz plik (umowę, regulamin, ustawę) i zadajesz pytania o jego treść — bez zapisywania pliku w aplikacji.</p></div>
+    <div class="card"><h4>⚖️ Przepisy prawa</h4><p>Opisujesz problem, a asystent wskazuje pasujące artykuły z bazy aktów prawnych.</p></div>
+  </div>
+</section>
+
+<!-- ───────────── 1. Pierwsze kroki ───────────── -->
+<section>
+  <h2>1. Pierwsze kroki — konto i logowanie</h2>
+
+  <h3>Zakładanie konta</h3>
+  <ol class="steps">
+    <li>Otwórz <b>https://ai-notatnik.pages.dev</b> w przeglądarce (Chrome, Edge, Firefox, Safari — także na telefonie).</li>
+    <li>Wybierz zakładkę <span class="ui">Rejestracja</span>, wpisz adres e-mail i hasło (minimum 6 znaków).</li>
+    <li>Kliknij <span class="ui">Załóż konto</span>. Na Twoją skrzynkę przyjdzie wiadomość z linkiem potwierdzającym — kliknij go.</li>
+    <li>Wróć do aplikacji, wybierz <span class="ui">Logowanie</span> i zaloguj się tym samym e-mailem i hasłem.</li>
+  </ol>
+
+  <div class="box tip"><b>Wskazówka</b>Nie widzisz maila z potwierdzeniem? Sprawdź folder „Spam” lub „Oferty”. Link prowadzi z powrotem do aplikacji.</div>
+
+  <h3>Jak wygląda aplikacja</h3>
+  <p>Po zalogowaniu masz dwie zakładki na górze ekranu:</p>
+
+  <div class="sketch">
+    <div class="top"><b>AI Notatnik</b><span class="tab on">Czat</span><span class="tab">Pliki</span></div>
+    <div class="body">
+      <div class="side">
+        <div class="new">+ Nowa rozmowa</div>
+        <div class="item on">01.10.2026, 14:05 <span>🗑</span></div>
+        <div class="item">30.09.2026, 09:12</div>
+      </div>
+      <div class="main">
+        <div class="msg ai" style="max-width:70%">Cześć! Mogę pomóc z notatkami, fakturami…</div>
+        <div class="spacer"></div>
+        <div class="input"><span class="clip">📎</span><span class="field">Napisz wiadomość…</span><span class="btn">Wyślij</span></div>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th style="width:28%">Element</th><th>Do czego służy</th></tr>
+    <tr><td><span class="ui">Czat</span></td><td>Rozmowa z asystentem AI — tu tworzysz notatki, pytasz o faktury, analizujesz dokumenty.</td></tr>
+    <tr><td><span class="ui">Pliki</span></td><td>Wgrywanie faktur i dokumentów, które mają zostać zapisane (np. do liczenia KUP), ich podgląd i usuwanie.</td></tr>
+    <tr><td><span class="ui">+ Nowa rozmowa</span></td><td>Zaczyna czystą rozmowę. Dobrze zaczynać nową dla każdego tematu.</td></tr>
+    <tr><td>🗑 przy rozmowie</td><td>Usuwa rozmowę (pojawia się po najechaniu myszką; na telefonie jest widoczna od razu).</td></tr>
+    <tr><td>📎 obok pola wiadomości</td><td>Dołącza plik z komputera do rozmowy <i>bez</i> zapisywania go w aplikacji.</td></tr>
+  </table>
+</section>
+
+<!-- ───────────── 2. Czat ───────────── -->
+<section>
+  <h2>2. Czat z asystentem AI</h2>
+  <p>Asystent rozumie zwykły język — pisz tak, jak do współpracownika. Odpowiada w języku, w którym piszesz.</p>
+
+  <h3>Na dobry początek: przywitaj się</h3>
+  <p>Napisz <b>„cześć”</b> lub <b>„co potrafisz?”</b> — asystent przedstawi swoje możliwości, ograniczenia i podpowie przykładowe pytania.</p>
+
+  <div class="chat">
+    <div class="title">Przykład</div>
+    <div class="msg user">cześć</div>
+    <div class="msg ai">Cześć! Mogę: zapisać notatkę z czatu, przeszukać Twoje notatki, przeanalizować wgrane faktury i policzyć koszty uzyskania przychodu, odpowiedzieć na pytania o plik dołączony przez 📎 oraz wskazać pasujące przepisy prawa.<br>Nie mogę: edytować ani usuwać notatek, przeglądać internetu, udzielać wiążących porad prawnych lub podatkowych ani pokazywać danych innych użytkowników.<br>Spróbuj np.: „Policz KUP za wrzesień”.</div>
+  </div>
+
+  <h3>Rozmowy</h3>
+  <ul>
+    <li><b>Nowa rozmowa</b> — przycisk <span class="ui">+ Nowa rozmowa</span>. Asystent pamięta kontekst w obrębie jednej rozmowy, więc możesz dopytywać („a w sierpniu?”).</li>
+    <li><b>Powrót do starej rozmowy</b> — kliknij jej datę na liście po lewej.</li>
+    <li><b>Usuwanie</b> — ikona 🗑 obok rozmowy. Aplikacja zapyta o potwierdzenie; usunięcia nie da się cofnąć, a wszystkie wiadomości z rozmowy znikną. Notatki, faktury i pliki <i>nie</i> są usuwane.</li>
+  </ul>
+
+  <div class="box warn"><b>Gdy asystent nie odpowiada</b>Zamiast odpowiedzi pojawi się wiadomość w czerwonej ramce: „Asystent AI jest chwilowo niedostępny…”. Twoja wiadomość jest zapisana — odczekaj chwilę i wyślij ją ponownie.</div>
+
+  <div class="chat">
+    <div class="title">Tak wygląda komunikat o błędzie</div>
+    <div class="msg user">Policz KUP za wrzesień</div>
+    <div class="msg err">⚠️ Asystent AI jest chwilowo niedostępny i nie mógł odpowiedzieć. Twoja wiadomość została zapisana — spróbuj ponownie za chwilę.</div>
+  </div>
+</section>
+
+<!-- ───────────── 3. Notatki ───────────── -->
+<section>
+  <h2>3. Notatki — zapisywanie i wyszukiwanie</h2>
+
+  <h3>Tworzenie notatki</h3>
+  <p>Powiedz asystentowi, co zapisać — najlepiej podając tytuł i treść. Jeśli czegoś zabraknie, asystent dopyta.</p>
+  <div class="chat">
+    <div class="title">Przykład — notatka ze spotkania</div>
+    <div class="msg user">Zapisz notatkę „Spotkanie z księgową 01.10”: do 20.10 wysłać faktury za wrzesień, zapytać o ryczałt od 2027, kolejne spotkanie 5.11.</div>
+    <div class="msg ai">Zapisałem notatkę „Spotkanie z księgową 01.10”. Zawiera 3 punkty: termin wysyłki faktur, pytanie o ryczałt i datę kolejnego spotkania.</div>
+  </div>
+
+  <h3>Wyszukiwanie — dwa sposoby</h3>
+  <table>
+    <tr><th style="width:26%">Sposób</th><th style="width:37%">Kiedy używać</th><th>Przykładowe pytanie</th></tr>
+    <tr><td><b>Po znaczeniu</b> (semantyczne)</td><td>Pamiętasz temat, ale nie dokładne słowa.</td><td>„Co ustaliłem z księgową w sprawie podatków?”</td></tr>
+    <tr><td><b>Po słowie / frazie</b></td><td>Szukasz konkretnej nazwy, numeru, nazwiska.</td><td>„Znajdź notatki ze słowem <i>ryczałt</i>”</td></tr>
+  </table>
+  <p>Nie musisz wybierać sposobu — asystent sam dobiera właściwy na podstawie pytania.</p>
+
+  <h3>Praktyczne zastosowania</h3>
+  <div class="two">
+    <div class="card"><h4>Dziennik projektu</h4><p>Po każdym spotkaniu: „Zapisz notatkę <i>Projekt X — 12.10</i>: …”. Po miesiącu: „Podsumuj, co ustaliliśmy w projekcie X”.</p></div>
+    <div class="card"><h4>Baza pomysłów</h4><p>„Zapisz pomysł: newsletter dla klientów raz w miesiącu”. Później: „Jakie miałem pomysły na marketing?”</p></div>
+    <div class="card"><h4>Lista do zapamiętania</h4><p>„Zapisz notatkę <i>Hasła Wi-Fi biura</i>…” — <b>nie zapisuj</b> jednak haseł do banku ani kodów PIN.</p></div>
+    <div class="card"><h4>Notatka z dokumentu</h4><p>Dołącz umowę przez 📎 i napisz: „Zrób notatkę z najważniejszymi terminami z tej umowy”.</p></div>
+  </div>
+
+  <div class="box tip"><b>Ograniczenie</b>Notatki możesz tworzyć i przeszukiwać. Edycja, usuwanie i wyświetlenie pełnej listy notatek nie są obecnie dostępne z poziomu czatu.</div>
+</section>
+
+<!-- ───────────── 4. Faktury i KUP ───────────── -->
+<section>
+  <h2>4. Faktury i koszty uzyskania przychodu (KUP)</h2>
+  <p>Zakładka <span class="ui">Pliki</span> służy do dokumentów, które mają zostać <b>zapisane</b> w aplikacji. Każdy wgrany plik AI traktuje jak fakturę: odczytuje numer, kontrahenta, datę, kwoty netto/VAT/brutto i kategorię, a następnie ocenia, czy wydatek wygląda na firmowy.</p>
+
+  <h3>Wgrywanie faktury</h3>
+  <ol class="steps">
+    <li>Przejdź do zakładki <span class="ui">Pliki</span>.</li>
+    <li>Kliknij <span class="ui">Wgraj plik (PDF / DOCX / TXT)</span> i wybierz fakturę. Obsługiwane formaty: PDF, DOCX, TXT, MD — maksymalnie 10 MB.</li>
+    <li>Plik pojawi się na liście ze statusem. Po kilku–kilkunastu sekundach kliknij <span class="ui">Odśwież</span>.</li>
+  </ol>
+
+  <table>
+    <tr><th style="width:24%">Status</th><th>Znaczenie</th></tr>
+    <tr><td>W kolejce</td><td>Plik zapisany, przetwarzanie zaraz się zacznie.</td></tr>
+    <tr><td>Przetwarzanie…</td><td>AI odczytuje dane z faktury.</td></tr>
+    <tr><td>Gotowe</td><td>Dane są w systemie — możesz pytać o fakturę w czacie.</td></tr>
+    <tr><td>Błąd</td><td>Nie udało się przetworzyć (np. chwilowa niedostępność AI). Usuń plik i wgraj go ponownie później.</td></tr>
+  </table>
+
+  <h3>Podgląd i usuwanie</h3>
+  <ul>
+    <li><b>Otwórz</b> — kliknij nazwę pliku; otworzy się w nowej karcie. Link jest jednorazowy i ważny 60 sekund, więc nie da się go przekazać innej osobie.</li>
+    <li><b>Usuń</b> — przycisk <span class="ui">Usuń</span> przy pliku. Po potwierdzeniu znika plik <b>i dane faktury</b>, więc przestaje być liczona do KUP.</li>
+  </ul>
+
+  <div class="box warn"><b>Skany i zdjęcia</b>Aplikacja czyta tekst z dokumentu. PDF będący samym skanem (zdjęciem kartki) nie ma warstwy tekstowej i nie zostanie odczytany. Najlepiej działają faktury PDF pobrane z systemu sprzedawcy lub KSeF.</div>
+</section>
+
+<section>
+  <h2>4. Faktury i KUP — praktyczne scenariusze</h2>
+
+  <h3>Scenariusz 1: Miesięczne rozliczenie kosztów</h3>
+  <p>Na koniec miesiąca wgraj wszystkie faktury kosztowe, a następnie zapytaj w czacie:</p>
+  <div class="chat">
+    <div class="msg user">Policz koszty uzyskania przychodu za wrzesień 2026</div>
+    <div class="msg ai">Suma kosztów firmowych za 01.09–30.09.2026: <b>4 812,40 zł netto</b> z 7 faktur. Pominąłem 1 fakturę ocenioną jako prywatna (Sklep XYZ, 14.09).<br><small>⚠️ To materiał pomocniczy — zweryfikuj z księgowym przed złożeniem deklaracji.</small></div>
+  </div>
+
+  <h3>Scenariusz 2: Wykluczenie prywatnego wydatku</h3>
+  <p>Jeśli wśród kosztów jest coś prywatnego, poproś o wykluczenie. Asystent najpierw znajdzie fakturę i zapyta o potwierdzenie — dopiero potem zmieni wyliczenie.</p>
+  <div class="chat">
+    <div class="msg user">Faktura z Media Expert z 22 września to prywatny telewizor, wyklucz ją z kosztów</div>
+    <div class="msg ai">Znalazłem: Media Expert, 22.09.2026, 2 499,00 zł brutto. Czy na pewno wykluczyć ją z KUP?</div>
+    <div class="msg user">Tak</div>
+    <div class="msg ai">Gotowe — faktura nie będzie wliczana do kosztów.</div>
+  </div>
+
+  <h3>Scenariusz 3: Szukanie konkretnych faktur</h3>
+  <ul>
+    <li>„Pokaż faktury od Orlen z trzeciego kwartału”</li>
+    <li>„Ile wydałem na usługi IT od lipca do września?”</li>
+    <li>„Znajdź faktury z kategorii paliwo za sierpień”</li>
+  </ul>
+
+  <div class="box warn"><b>Ważne o wyliczeniach KUP</b>Wynik to suma kwot netto faktur ocenionych jako firmowe. Aplikacja <b>nie uwzględnia</b> szczególnych zasad (np. limitów dla samochodów osobowych czy kosztów reprezentacji). Traktuj wynik jako pomoc i zawsze konsultuj go z księgowym.</div>
+</section>
+
+<!-- ───────────── 5. Plik z komputera ───────────── -->
+<section>
+  <h2>5. Analiza dokumentu z komputera (📎)</h2>
+  <p>Chcesz zapytać o treść umowy, regulaminu czy ustawy, ale nie chcesz jej zapisywać w aplikacji? Użyj przycisku 📎 w czacie.</p>
+
+  <ol class="steps">
+    <li>W czacie kliknij <b>📎</b> obok pola wiadomości i wybierz plik (PDF, DOCX, TXT lub MD, do 10 MB).</li>
+    <li>Na chwilę przycisk zmieni się w „…” — przeglądarka odczytuje tekst. Nad polem wiadomości pojawi się: <i>📎 nazwa_pliku (z komputera, bez zapisu)</i>.</li>
+    <li>Zadawaj pytania. Plik pozostaje dołączony do kolejnych wiadomości, dopóki nie klikniesz <b>✕</b>.</li>
+  </ol>
+
+  <div class="box ok"><b>Prywatność</b>Tekst dokumentu odczytuje Twoja przeglądarka — sam plik nie jest wysyłany ani zapisywany. Do AI trafia tylko jego tekst, razem z pytaniem. W historii rozmowy zostaje wyłącznie wzmianka „📎 nazwa pliku”.</div>
+
+  <h3>Asystent trzyma się dokumentu</h3>
+  <p>Gdy plik jest dołączony, asystent odpowiada <b>wyłącznie na podstawie jego treści</b> i wskazuje konkretne fragmenty lub artykuły. Na pytania niezwiązane z dokumentem nie odpowiada — zamiast tego mówi, czego dokument dotyczy.</p>
+
+  <div class="chat">
+    <div class="title">Przykład — dołączona Ordynacja podatkowa</div>
+    <div class="msg user"><small>📎 ordynacja_podatkowa.pdf</small>Po ilu latach przedawnia się zobowiązanie podatkowe?</div>
+    <div class="msg ai">Zgodnie z art. 70 § 1 zobowiązanie podatkowe przedawnia się z upływem 5 lat, licząc od końca roku kalendarzowego, w którym upłynął termin płatności podatku.</div>
+    <div class="msg user">Jaka jest kara za kradzież według kodeksu karnego?</div>
+    <div class="msg ai">Dołączony dokument (Ordynacja podatkowa) nie dotyczy kodeksu karnego — opisuje m.in. powstawanie i przedawnienie zobowiązań podatkowych. Aby zadać pytanie ogólne, odepnij plik (✕).</div>
+  </div>
+
+</section>
+
+<section>
+  <h2>5. Dokument z komputera — praktyczne zastosowania</h2>
+  <p>Kilka sytuacji, w których dołączenie pliku przez 📎 oszczędza najwięcej czasu:</p>
+  <div class="two">
+    <div class="card"><h4>Umowa najmu / zlecenia</h4><p>„Jaki jest okres wypowiedzenia?”, „Jakie kary umowne mi grożą?”, „Wypisz wszystkie terminy płatności”.</p></div>
+    <div class="card"><h4>Regulamin, OWU ubezpieczenia</h4><p>„Czy ubezpieczenie obejmuje kradzież roweru z piwnicy?”, „W jakim terminie muszę zgłosić szkodę?”</p></div>
+    <div class="card"><h4>Ustawa lub rozporządzenie</h4><p>„Wyjaśnij prostym językiem art. 15”, „Które przepisy dotyczą korekty deklaracji?”</p></div>
+    <div class="card"><h4>Pismo z urzędu</h4><p>„Czego ode mnie chcą i do kiedy?”, „Streść to pismo w 3 punktach”.</p></div>
+  </div>
+
+  <h3>Jak pytać, żeby dostać lepszą odpowiedź</h3>
+  <table>
+    <tr><th style="width:38%">Zamiast…</th><th>…lepiej zapytaj</th></tr>
+    <tr><td>„Co tu jest?”</td><td>„Streść ten dokument w 5 punktach, z numerami paragrafów”</td></tr>
+    <tr><td>„Czy mogę wypowiedzieć?”</td><td>„W jakim trybie i z jakim okresem wypowiedzenia mogę rozwiązać tę umowę jako najemca?”</td></tr>
+    <tr><td>„Ile muszę zapłacić?”</td><td>„Wypisz wszystkie opłaty, kary i terminy płatności z tej umowy w tabeli”</td></tr>
+    <tr><td>„Co znaczy ten przepis?”</td><td>„Wyjaśnij art. 70 § 1 prostym językiem na przykładzie podatku za 2020 rok”</td></tr>
+  </table>
+
+  <h3>Typowy przebieg pracy z dokumentem</h3>
+  <ol class="steps">
+    <li>Dołącz plik przez 📎 i poproś o krótkie streszczenie — zobaczysz, czy tekst został poprawnie odczytany.</li>
+    <li>Zadawaj szczegółowe pytania; asystent wskaże fragmenty, na których się opiera.</li>
+    <li>Na koniec poproś: „Zrób notatkę z najważniejszymi ustaleniami” — wnioski zostaną w aplikacji, choć sam plik nie.</li>
+    <li>Odepnij plik (✕), zanim przejdziesz do pytań na inny temat.</li>
+  </ol>
+
+  <div class="box tip"><b>Którą opcję wybrać: 📎 czy „Pliki”?</b>
+    <b style="display:inline">📎 w czacie</b> — jednorazowa analiza, plik zostaje tylko u Ciebie.<br>
+    <b style="display:inline">Zakładka Pliki</b> — faktury, które mają być zapisane i liczone do KUP oraz dostępne później.</div>
+</section>
+
+<!-- ───────────── 6. Przepisy ───────────── -->
+<section>
+  <h2>6. Wyszukiwanie przepisów prawa</h2>
+  <p>Gdy w rozmowie nie ma dołączonego pliku, możesz opisać swój problem, a asystent przeszuka bazę aktów prawnych i wskaże pasujące artykuły.</p>
+
+  <div class="chat">
+    <div class="msg user">Klient nie zapłacił mi faktury od 3 miesięcy. Jakie przepisy mogą mieć zastosowanie?</div>
+    <div class="msg ai">Na podstawie bazy aktów mogą mieć zastosowanie: … (lista artykułów z krótkim opisem)<br><small>⚠️ Odpowiedź nie zastępuje porady prawnika.</small></div>
+  </div>
+
+  <div class="box warn"><b>Stan bazy przepisów</b>Wyszukiwarka korzysta wyłącznie z aktów wczytanych do aplikacji przez administratora. Jeśli baza nie zawiera potrzebnej ustawy, asystent jej nie znajdzie. <b>Obejście:</b> pobierz tekst ustawy (np. z isap.sejm.gov.pl jako PDF) i dołącz go przez 📎 — asystent odpowie na podstawie tego dokumentu.</div>
+
+  <h3>Jak dobrze opisać problem</h3>
+  <ul>
+    <li>Opisz sytuację faktami: kto, co, kiedy — np. „wynajmuję mieszkanie, najemca zalega 2 miesiące z czynszem”.</li>
+    <li>Napisz, czego oczekujesz: „jakie mam prawa?”, „jakie terminy obowiązują?”.</li>
+    <li>Nie podawaj zbędnych danych osobowych (PESEL, adresy, nazwiska osób trzecich).</li>
+  </ul>
+  <div class="box tip"><b>Pamiętaj</b>Odpowiedzi prawne i podatkowe mają charakter informacyjny. Przed podjęciem ważnych decyzji skonsultuj się z prawnikiem, doradcą podatkowym lub księgowym.</div>
+</section>
+
+<!-- ───────────── 7. Prywatność ───────────── -->
+<section>
+  <h2>7. Prywatność i bezpieczeństwo</h2>
+  <table>
+    <tr><th style="width:34%">Co</th><th>Jak jest chronione</th></tr>
+    <tr><td>Twoje notatki, rozmowy, faktury</td><td>Widoczne wyłącznie dla Ciebie. Ochrona działa na poziomie bazy danych — nawet błąd w aplikacji nie pozwala innemu użytkownikowi ich odczytać.</td></tr>
+    <tr><td>Wgrane pliki (zakładka Pliki)</td><td>Prywatny magazyn, każdy użytkownik ma osobny folder. Linki do podglądu wygasają po 60 sekundach.</td></tr>
+    <tr><td>Pliki dołączone przez 📎</td><td>Nie są nigdzie zapisywane. Do AI trafia tylko tekst — na czas odpowiedzi.</td></tr>
+    <tr><td>Dane innych osób</td><td>Asystent odmawia podania jakichkolwiek informacji o innych użytkownikach — także gdy ktoś podaje się za administratora.</td></tr>
+    <tr><td>Usuwanie</td><td>Usunięta rozmowa lub plik znika trwale (z potwierdzeniem przed usunięciem).</td></tr>
+  </table>
+
+  <h3>Dobre praktyki</h3>
+  <ul>
+    <li>Używaj silnego, unikalnego hasła i wyloguj się na komputerach współdzielonych.</li>
+    <li>Nie zapisuj w notatkach haseł do banku, kodów PIN ani pełnych numerów kart.</li>
+    <li>Treść pytań i dokumentów jest przetwarzana przez zewnętrzny model AI (Google Gemini) w celu udzielenia odpowiedzi. Nie dołączaj dokumentów, których nie możesz przekazać do takiego przetwarzania.</li>
+  </ul>
+</section>
+
+<!-- ───────────── 8. Problemy ───────────── -->
+<section>
+  <h2>8. Rozwiązywanie problemów</h2>
+  <table>
+    <tr><th style="width:36%">Problem</th><th>Co zrobić</th></tr>
+    <tr><td>„Asystent AI jest chwilowo niedostępny”</td><td>Usługa AI jest przeciążona. Odczekaj minutę i wyślij wiadomość ponownie.</td></tr>
+    <tr><td>Po aktualizacji aplikacji coś nie działa / dziwny błąd</td><td>Odśwież stronę z pominięciem pamięci podręcznej: <b>Ctrl + F5</b> (Mac: <b>Cmd + Shift + R</b>).</td></tr>
+    <tr><td>„Nie udało się odczytać tekstu z pliku”</td><td>To prawdopodobnie skan bez warstwy tekstowej. Użyj PDF wygenerowanego cyfrowo albo skopiuj tekst do pliku TXT.</td></tr>
+    <tr><td>„Plik jest za duży”</td><td>Limit to 10 MB. Podziel dokument lub zapisz tylko potrzebne strony.</td></tr>
+    <tr><td>„Nieobsługiwany typ pliku”</td><td>Obsługiwane: PDF, DOCX, TXT, MD. Pliki .doc, .xls czy zdjęcia zapisz najpierw jako PDF lub DOCX.</td></tr>
+    <tr><td>Faktura ma status „Błąd”</td><td>Usuń ją przyciskiem <span class="ui">Usuń</span> i wgraj ponownie za chwilę.</td></tr>
+    <tr><td>Asystent odmawia odpowiedzi na pytanie</td><td>Sprawdź, czy nie masz dołączonego pliku 📎 — wtedy odpowiada tylko o nim. Odepnij plik (✕) i zapytaj ponownie.</td></tr>
+    <tr><td>Wynik KUP wydaje się zbyt niski</td><td>Zapytaj: „Które faktury zostały pominięte i dlaczego?” — część mogła zostać oceniona jako prywatna.</td></tr>
+    <tr><td>Nie przyszedł mail z potwierdzeniem konta</td><td>Sprawdź spam; odczekaj kilka minut i spróbuj zarejestrować się ponownie.</td></tr>
+    <tr><td>Długi dokument — asystent „nie widzi” końca</td><td>Analizowane jest ok. 60 000 znaków (ok. 30 stron). Przy dłuższych dokumentach dołącz tylko potrzebny fragment.</td></tr>
+  </table>
+</section>
+
+<!-- ───────────── 9. Ściąga ───────────── -->
+<section>
+  <h2>9. Ściąga — gotowe pytania do skopiowania</h2>
+
+  <h3>📝 Notatki</h3>
+  <ul>
+    <li>Zapisz notatkę „Zakupy biuro”: toner, papier A4, segregatory</li>
+    <li>Co zapisałem o spotkaniu z księgową?</li>
+    <li>Znajdź notatki ze słowem „faktura korygująca”</li>
+    <li>Podsumuj moje notatki dotyczące projektu X</li>
+  </ul>
+
+  <h3>🧾 Faktury i KUP</h3>
+  <ul>
+    <li>Policz koszty uzyskania przychodu za ostatni miesiąc</li>
+    <li>Ile wydałem na paliwo w trzecim kwartale 2026?</li>
+    <li>Pokaż wszystkie faktury od firmy ABC</li>
+    <li>Które faktury zostały uznane za prywatne i dlaczego?</li>
+    <li>Wyklucz z kosztów fakturę z IKEA z 3 września</li>
+  </ul>
+
+  <h3>📎 Dokument z komputera</h3>
+  <ul>
+    <li>Streść ten dokument w 5 punktach</li>
+    <li>Jakie terminy i daty są w tej umowie?</li>
+    <li>Jakie obowiązki ma najemca według tej umowy?</li>
+    <li>Wyjaśnij prostym językiem art. 12 tego dokumentu</li>
+    <li>Zrób notatkę z najważniejszymi informacjami z tego pliku</li>
+  </ul>
+
+  <h3>⚖️ Przepisy</h3>
+  <ul>
+    <li>Kontrahent nie zapłacił faktury — jakie przepisy mogą mieć zastosowanie?</li>
+    <li>Jakie przepisy dotyczą korekty deklaracji podatkowej?</li>
+  </ul>
+
+  <div class="box tip" style="margin-top:18px"><b>Złota zasada</b>Im konkretniej zapytasz (okres, nazwa firmy, numer artykułu), tym trafniejsza odpowiedź. Gdy wynik jest niepełny — dopytaj w tej samej rozmowie.</div>
+</section>
+
+</body>
+</html>
