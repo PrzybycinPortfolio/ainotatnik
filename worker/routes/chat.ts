@@ -2,10 +2,14 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Content } from '@google/generative-ai';
 import type { AppBindings } from '../types';
-import { generateEmbedding, generateNoteEmbedding, generateChatResponse } from '../lib/gemini';
-import { buildContextPrompt } from '../../ai/prompts';
+import { generateNoteEmbedding, startToolChatSession } from '../lib/gemini';
+import { getFunctionDeclarations, executeTool } from '../tools/registry';
 
 const chat = new Hono<AppBindings>();
+
+// Hard cap on tool-call round trips per message so a confused model can't
+// loop indefinitely (each round trip is a billed Gemini call).
+const MAX_TOOL_ITERATIONS = 5;
 
 const messageSchema = z.object({ message: z.string().min(1).max(4000) });
 
@@ -68,21 +72,33 @@ chat.post('/:id/messages', async (c) => {
   if (histErr) return c.json({ error: histErr.message }, 500);
 
   const pastMessages = (history ?? []).slice(0, -1);
-
-  const queryEmbedding = await generateEmbedding(apiKey, userMessage);
-  const { data: relevantNotes } = await supabase.rpc('search_notes_by_embedding', {
-    query_embedding: queryEmbedding,
-    match_threshold: 0.6,
-    match_count: 5,
-    p_user_id: userId,
-  });
-
-  const contextPrompt = buildContextPrompt(relevantNotes ?? []);
   const geminiHistory: Content[] = pastMessages.map((m: { role: 'user' | 'model'; content: string }) => ({
     role: m.role,
     parts: [{ text: m.content }],
   }));
-  const response = await generateChatResponse(apiKey, userMessage, geminiHistory, contextPrompt);
+
+  const session = startToolChatSession(apiKey, getFunctionDeclarations(), geminiHistory);
+  let turnResult = await session.sendMessage(userMessage);
+
+  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+    const calls = turnResult.response.functionCalls();
+    if (!calls || calls.length === 0) break;
+
+    const functionResponses = await Promise.all(
+      calls.map(async (call) => {
+        try {
+          const output = await executeTool(call.name, call.args, { supabase, userId, geminiApiKey: apiKey });
+          return { functionResponse: { name: call.name, response: { result: output } } };
+        } catch (err) {
+          return { functionResponse: { name: call.name, response: { error: (err as Error).message } } };
+        }
+      })
+    );
+
+    turnResult = await session.sendMessage(functionResponses);
+  }
+
+  const response = turnResult.response.text();
 
   const actionMatch = response.match(/\[ACTION:CREATE_NOTE\]([\s\S]*?)\[\/ACTION\]/);
   if (actionMatch) {

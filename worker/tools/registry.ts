@@ -1,0 +1,30 @@
+import type { FunctionDeclaration } from '@google/generative-ai';
+import type { Tool, ToolContext } from './types';
+import { semanticSearchTool } from './semanticSearch';
+import { keywordSearchTool } from './keywordSearch';
+
+// Single place a new capability gets wired in. Each tool is self-contained
+// (worker/tools/*.ts) and validated independently — this file only lists and
+// dispatches them, it never contains business logic itself.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tools: Tool<any, any>[] = [semanticSearchTool, keywordSearchTool];
+
+const toolsByName = new Map(tools.map((t) => [t.name, t]));
+
+export function getFunctionDeclarations(): FunctionDeclaration[] {
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    parameters: t.parameters,
+  }));
+}
+
+export async function executeTool(name: string, rawArgs: unknown, ctx: ToolContext): Promise<unknown> {
+  const tool = toolsByName.get(name);
+  if (!tool) throw new Error(`Unknown tool: ${name}`);
+
+  const parsed = tool.inputSchema.safeParse(rawArgs);
+  if (!parsed.success) throw new Error(`Invalid arguments for ${name}: ${parsed.error.message}`);
+
+  return tool.execute(parsed.data, ctx);
+}

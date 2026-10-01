@@ -3,14 +3,9 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppBindings } from '../types';
 import { generateEmbedding, generateNoteEmbedding } from '../lib/gemini';
+import { escapeLikeValue } from '../lib/text';
 
 const notes = new Hono<AppBindings>();
-
-// Escapes characters with special meaning in a PostgREST filter value: `,` `.`
-// `(` `)` can break out of the .or() filter list, `%` `_` are SQL LIKE wildcards.
-function escapeLikeValue(value: string): string {
-  return value.replace(/[\\,.()%_]/g, (c) => `\\${c}`);
-}
 
 async function upsertNoteEmbedding(
   supabase: SupabaseClient,
