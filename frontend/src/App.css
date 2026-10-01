@@ -427,3 +427,65 @@
   cursor: pointer;
   text-decoration: underline;
 }
+
+.chat-input-row button.attach-btn {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+}
+
+.chat-attachment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.chat-attachment small {
+  color: var(--text);
+}
+
+.chat-attachment button {
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.chat-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-sidebar li button.chat-delete-btn {
+  width: auto;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chat-sidebar-item:hover .chat-delete-btn,
+.chat-sidebar li button.chat-delete-btn:focus-visible {
+  opacity: 0.7;
+}
+
+.chat-sidebar li button.chat-delete-btn:hover {
+  opacity: 1;
+  background: rgba(217, 72, 79, 0.15);
+}
+
+@media (hover: none) {
+  .chat-sidebar li button.chat-delete-btn {
+    opacity: 0.7;
+  }
+}

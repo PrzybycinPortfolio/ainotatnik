@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { apiGet, apiPost } from '../lib/api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { apiDelete, apiGet, apiPost, apiPostForm } from '../lib/api';
 import type { Conversation, Message } from '../types';
 
 export function ChatPage() {
@@ -9,6 +9,9 @@ export function ChatPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Local file kept only in the browser and re-sent with every message until detached; never stored server-side.
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadConversations();
@@ -48,6 +51,23 @@ export function ChatPage() {
     }
   }
 
+  async function deleteConversation(conv: Conversation) {
+    const label = new Date(conv.created_at).toLocaleString('pl-PL');
+    if (!confirm(`Usunąć rozmowę z ${label}? Wszystkie jej wiadomości zostaną trwale usunięte.`)) return;
+
+    try {
+      await apiDelete(`/conversations/${conv.id}`);
+      const remaining = conversations.filter((c) => c.id !== conv.id);
+      setConversations(remaining);
+      if (conv.id === activeId) {
+        setActiveId(remaining[0]?.id ?? null);
+        setMessages([]);
+      }
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   async function handleSend(e: FormEvent) {
     e.preventDefault();
     const text = input.trim();
@@ -64,13 +84,22 @@ export function ChatPage() {
     setInput('');
     setSending(true);
     setError(null);
+    const content = attachment ? `📎 ${attachment.name}\n${text}` : text;
     setMessages((prev) => [
       ...prev,
-      { id: `optimistic-${Date.now()}`, conversation_id: conversationId!, role: 'user', content: text, created_at: new Date().toISOString() },
+      { id: `optimistic-${Date.now()}`, conversation_id: conversationId!, role: 'user', content, created_at: new Date().toISOString() },
     ]);
 
     try {
-      await apiPost<{ response: string }>(`/conversations/${conversationId}/messages`, { message: text });
+      const path = `/conversations/${conversationId}/messages`;
+      if (attachment) {
+        const form = new FormData();
+        form.append('message', text);
+        form.append('file', attachment);
+        await apiPostForm<{ response: string }>(path, form);
+      } else {
+        await apiPost<{ response: string }>(path, { message: text });
+      }
       await loadMessages(conversationId);
     } catch (err) {
       setError((err as Error).message);
@@ -87,9 +116,17 @@ export function ChatPage() {
         </button>
         <ul>
           {conversations.map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="chat-sidebar-item">
               <button className={c.id === activeId ? 'active' : ''} onClick={() => setActiveId(c.id)}>
                 {new Date(c.created_at).toLocaleString('pl-PL')}
+              </button>
+              <button
+                className="chat-delete-btn"
+                onClick={() => deleteConversation(c)}
+                title="Usuń rozmowę"
+                aria-label="Usuń rozmowę"
+              >
+                🗑
               </button>
             </li>
           ))}
@@ -114,7 +151,37 @@ export function ChatPage() {
 
         {error && <p className="auth-error">{error}</p>}
 
+        {attachment && (
+          <div className="chat-attachment">
+            <span title="Plik nie jest zapisywany w aplikacji — jest wysyłany do AI razem z każdą wiadomością">
+              📎 {attachment.name} <small>(z komputera, bez zapisu)</small>
+            </span>
+            <button type="button" onClick={() => setAttachment(null)} aria-label="Odepnij plik">
+              ✕
+            </button>
+          </div>
+        )}
+
         <form className="chat-input-row" onSubmit={handleSend}>
+          <button
+            type="button"
+            className="attach-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending}
+            title="Dołącz plik z komputera bez wgrywania (PDF / DOCX / TXT / MD)"
+          >
+            📎
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            hidden
+            onChange={(e) => {
+              setAttachment(e.target.files?.[0] ?? null);
+              e.target.value = '';
+            }}
+          />
           <input
             type="text"
             value={input}
