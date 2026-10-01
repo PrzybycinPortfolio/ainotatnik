@@ -5,7 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Restrict to the deployed frontend origin before going live, e.g. ALLOWED_ORIGIN = "https://ai-notatnik.pages.dev"
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://ai-notatnik.pages.dev,https://*.ai-notatnik.pages.dev"
 
 # Secrets — never put these here. Set them with:
 #   wrangler secret put SUPABASE_URL
