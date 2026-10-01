@@ -10,6 +10,7 @@
     "dev": "ts-node index.ts",
     "mcp": "ts-node mcp/server.ts",
     "generate-embeddings": "ts-node scripts/generateEmbeddings.ts",
+    "ingest-legal-act": "ts-node scripts/ingestLegalAct.ts",
     "dev:worker": "wrangler dev",
     "deploy:worker": "wrangler deploy"
   },
@@ -19,7 +20,9 @@
     "@supabase/supabase-js": "^2.47.0",
     "dotenv": "^16.4.5",
     "hono": "^4.6.0",
+    "jszip": "^3.10.2",
     "langsmith": "^0.3.0",
+    "unpdf": "^1.8.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

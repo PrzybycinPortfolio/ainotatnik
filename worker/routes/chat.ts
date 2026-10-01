@@ -3,13 +3,31 @@ import { z } from 'zod';
 import type { Content } from '@google/generative-ai';
 import type { AppBindings } from '../types';
 import { generateNoteEmbedding, startToolChatSession } from '../lib/gemini';
-import { getFunctionDeclarations, executeTool } from '../tools/registry';
+import { getFunctionDeclarations, executeTool, DISCLAIMER_REQUIRED_TOOLS } from '../tools/registry';
 
 const chat = new Hono<AppBindings>();
 
 // Hard cap on tool-call round trips per message so a confused model can't
 // loop indefinitely (each round trip is a billed Gemini call).
 const MAX_TOOL_ITERATIONS = 5;
+
+const KUP_DISCLAIMER_MARKER = 'zweryfikuj z księgowym';
+const LEGAL_DISCLAIMER_MARKER = 'nie zastępuje porady prawnika';
+const FALLBACK_DISCLAIMER =
+  '⚠️ Odpowiedź wygenerowana na podstawie narzędzi finansowych/prawnych tej aplikacji — to materiał pomocniczy, zweryfikuj z księgowym lub prawnikiem przed podjęciem działań.\n\n';
+
+// Don't trust the model to always include the disclaimer text its own tool
+// result returned — if a disclaimer-requiring tool ran this turn and the
+// final response doesn't contain either known marker, prepend a fixed one.
+function ensureDisclaimer(response: string, toolsUsed: Set<string>): string {
+  const requiresDisclaimer = [...toolsUsed].some((name) => DISCLAIMER_REQUIRED_TOOLS.has(name));
+  if (!requiresDisclaimer) return response;
+
+  const lower = response.toLowerCase();
+  if (lower.includes(KUP_DISCLAIMER_MARKER) || lower.includes(LEGAL_DISCLAIMER_MARKER)) return response;
+
+  return FALLBACK_DISCLAIMER + response;
+}
 
 const messageSchema = z.object({ message: z.string().min(1).max(4000) });
 
@@ -79,6 +97,7 @@ chat.post('/:id/messages', async (c) => {
 
   const session = startToolChatSession(apiKey, getFunctionDeclarations(), geminiHistory);
   let turnResult = await session.sendMessage(userMessage);
+  const toolsUsed = new Set<string>();
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     const calls = turnResult.response.functionCalls();
@@ -86,6 +105,7 @@ chat.post('/:id/messages', async (c) => {
 
     const functionResponses = await Promise.all(
       calls.map(async (call) => {
+        toolsUsed.add(call.name);
         try {
           const output = await executeTool(call.name, call.args, { supabase, userId, geminiApiKey: apiKey });
           return { functionResponse: { name: call.name, response: { result: output } } };
@@ -98,7 +118,7 @@ chat.post('/:id/messages', async (c) => {
     turnResult = await session.sendMessage(functionResponses);
   }
 
-  const response = turnResult.response.text();
+  const response = ensureDisclaimer(turnResult.response.text(), toolsUsed);
 
   const actionMatch = response.match(/\[ACTION:CREATE_NOTE\]([\s\S]*?)\[\/ACTION\]/);
   if (actionMatch) {
