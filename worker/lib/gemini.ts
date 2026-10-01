@@ -2,7 +2,24 @@ import { GoogleGenerativeAI, type ChatSession, type Content, type FunctionDeclar
 import { SYSTEM_PROMPT } from '../../ai/prompts';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
-const CHAT_MODEL = 'gemini-2.5-pro';
+// Tried in order: when a model is overloaded (503), over quota (429) or retired
+// (404), the next one is used. Older 2.5 models are closed to new API keys and
+// Pro models have no free-tier quota.
+export const CHAT_MODELS = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite'];
+
+// Runs `fn` with each model in turn until one succeeds; rethrows the last error.
+export async function withModelFallback<T>(fn: (model: string) => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (const model of CHAT_MODELS) {
+    try {
+      return await fn(model);
+    } catch (err) {
+      lastError = err;
+      console.error(`Gemini model ${model} failed:`, (err as Error).message);
+    }
+  }
+  throw lastError;
+}
 const EMBEDDING_DIMENSIONS = 768;
 
 // Clients are created per call (not at module scope) because Workers only
@@ -29,11 +46,12 @@ export async function generateChatResponse(
   contextPrompt: string
 ): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: CHAT_MODEL, systemInstruction: SYSTEM_PROMPT });
-  const chat = model.startChat({ history });
   const messageWithContext = contextPrompt ? `${userMessage}${contextPrompt}` : userMessage;
-  const result = await chat.sendMessage(messageWithContext);
-  return result.response.text();
+  return withModelFallback(async (modelName) => {
+    const model = genAI.getGenerativeModel({ model: modelName, systemInstruction: SYSTEM_PROMPT });
+    const result = await model.startChat({ history }).sendMessage(messageWithContext);
+    return result.response.text();
+  });
 }
 
 // Chat session wired to the tool registry's function declarations. The model
@@ -41,12 +59,13 @@ export async function generateChatResponse(
 // running a fixed search before every message.
 export function startToolChatSession(
   apiKey: string,
+  modelName: string,
   functionDeclarations: FunctionDeclaration[],
   history: Content[]
 ): ChatSession {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: CHAT_MODEL,
+    model: modelName,
     systemInstruction: SYSTEM_PROMPT,
     tools: [{ functionDeclarations }],
   });

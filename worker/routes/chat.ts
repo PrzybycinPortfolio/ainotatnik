@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Content } from '@google/generative-ai';
+import type { Content, GenerateContentResult } from '@google/generative-ai';
 import type { AppBindings } from '../types';
-import { generateNoteEmbedding, startToolChatSession } from '../lib/gemini';
+import { generateNoteEmbedding, startToolChatSession, withModelFallback } from '../lib/gemini';
 import { getFunctionDeclarations, executeTool, DISCLAIMER_REQUIRED_TOOLS } from '../tools/registry';
 
 const chat = new Hono<AppBindings>();
@@ -10,6 +10,9 @@ const chat = new Hono<AppBindings>();
 // Hard cap on tool-call round trips per message so a confused model can't
 // loop indefinitely (each round trip is a billed Gemini call).
 const MAX_TOOL_ITERATIONS = 5;
+
+const AI_UNAVAILABLE_MESSAGE =
+  '⚠️ Asystent AI jest chwilowo niedostępny i nie mógł odpowiedzieć. Twoja wiadomość została zapisana — spróbuj ponownie za chwilę.';
 
 const KUP_DISCLAIMER_MARKER = 'zweryfikuj z księgowym';
 const LEGAL_DISCLAIMER_MARKER = 'nie zastępuje porady prawnika';
@@ -120,36 +123,52 @@ chat.post('/:id/messages', async (c) => {
     .order('created_at', { ascending: true });
   if (histErr) return c.json({ error: histErr.message }, 500);
 
-  const pastMessages = (history ?? []).slice(0, -1);
-  const geminiHistory: Content[] = pastMessages.map((m: { role: 'user' | 'model'; content: string }) => ({
-    role: m.role,
-    parts: [{ text: m.content }],
-  }));
-
-  const session = startToolChatSession(apiKey, getFunctionDeclarations(), geminiHistory);
-  let turnResult = await session.sendMessage(modelMessage);
-  const toolsUsed = new Set<string>();
-
-  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-    const calls = turnResult.response.functionCalls();
-    if (!calls || calls.length === 0) break;
-
-    const functionResponses = await Promise.all(
-      calls.map(async (call) => {
-        toolsUsed.add(call.name);
-        try {
-          const output = await executeTool(call.name, call.args, { supabase, userId, geminiApiKey: apiKey });
-          return { functionResponse: { name: call.name, response: { result: output } } };
-        } catch (err) {
-          return { functionResponse: { name: call.name, response: { error: (err as Error).message } } };
-        }
-      })
-    );
-
-    turnResult = await session.sendMessage(functionResponses);
+  // Earlier failed turns leave user messages without a model reply; Gemini
+  // expects alternating roles, so consecutive same-role messages are merged.
+  const geminiHistory: Content[] = [];
+  for (const m of (history ?? []).slice(0, -1) as { role: 'user' | 'model'; content: string }[]) {
+    const last = geminiHistory[geminiHistory.length - 1];
+    if (last?.role === m.role) last.parts.push({ text: m.content });
+    else geminiHistory.push({ role: m.role, parts: [{ text: m.content }] });
   }
 
-  const response = ensureDisclaimer(turnResult.response.text(), toolsUsed);
+  let turnResult: GenerateContentResult;
+  const toolsUsed = new Set<string>();
+  try {
+    // Only the first call falls back to another model: once a tool has run, retrying
+    // the whole turn elsewhere could repeat its side effects.
+    const session = await withModelFallback(async (model) => {
+      const s = startToolChatSession(apiKey, model, getFunctionDeclarations(), geminiHistory);
+      turnResult = await s.sendMessage(modelMessage);
+      return s;
+    });
+
+    for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+      const calls = turnResult!.response.functionCalls();
+      if (!calls || calls.length === 0) break;
+
+      const functionResponses = await Promise.all(
+        calls.map(async (call) => {
+          toolsUsed.add(call.name);
+          try {
+            const output = await executeTool(call.name, call.args, { supabase, userId, geminiApiKey: apiKey });
+            return { functionResponse: { name: call.name, response: { result: output } } };
+          } catch (err) {
+            return { functionResponse: { name: call.name, response: { error: (err as Error).message } } };
+          }
+        })
+      );
+
+      turnResult = await session.sendMessage(functionResponses);
+    }
+    if (!turnResult!.response.text().trim()) throw new Error('empty model response');
+  } catch (err) {
+    // Details go to the logs only; the user gets a generic message, never the model name or raw error.
+    console.error('Chat AI failure:', (err as Error).message);
+    return c.json({ response: AI_UNAVAILABLE_MESSAGE, failed: true });
+  }
+
+  const response = ensureDisclaimer(turnResult!.response.text(), toolsUsed);
 
   const actionMatch = response.match(/\[ACTION:CREATE_NOTE\]([\s\S]*?)\[\/ACTION\]/);
   if (actionMatch) {

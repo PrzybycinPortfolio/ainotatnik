@@ -41,9 +41,14 @@ export async function processInvoiceFile(
 
     await supabase.from('files').update({ status: 'done' }).eq('id', fileId);
   } catch (err) {
+    // Raw errors (model names, API details) stay in the logs; the UI shows a generic message.
+    console.error(`Invoice processing failed for file ${fileId}:`, (err as Error).message);
     await supabase
       .from('files')
-      .update({ status: 'error', error_message: (err as Error).message })
+      .update({
+        status: 'error',
+        error_message: 'Nie udało się przetworzyć pliku — asystent AI jest chwilowo niedostępny. Usuń plik i wgraj go ponownie później.',
+      })
       .eq('id', fileId);
   }
 }

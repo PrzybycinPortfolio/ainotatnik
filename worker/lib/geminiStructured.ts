@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-
-const MODEL = 'gemini-2.5-pro';
+import { withModelFallback } from './gemini';
 
 export interface ExtractedInvoice {
   invoice_number: string | null;
@@ -34,14 +33,15 @@ const invoiceExtractionSchema = {
 // only expose secrets through the request's env, never as module-load globals.
 export async function extractInvoiceFields(apiKey: string, documentText: string): Promise<ExtractedInvoice> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    generationConfig: { responseMimeType: 'application/json', responseSchema: invoiceExtractionSchema },
-  });
-
   const prompt = `Extract invoice fields from the following document text. Use null for any field you cannot find — never guess a value.\n\n${documentText}`;
-  const result = await model.generateContent(prompt);
-  return JSON.parse(result.response.text()) as ExtractedInvoice;
+  return withModelFallback(async (modelName) => {
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: { responseMimeType: 'application/json', responseSchema: invoiceExtractionSchema },
+    });
+    const result = await model.generateContent(prompt);
+    return JSON.parse(result.response.text()) as ExtractedInvoice;
+  });
 }
 
 export interface InvoiceClassification {
@@ -64,10 +64,6 @@ export async function classifyInvoice(
   invoice: ExtractedInvoice
 ): Promise<InvoiceClassification> {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    generationConfig: { responseMimeType: 'application/json', responseSchema: classificationSchema },
-  });
 
   const prompt = `User's business activity: ${businessDescription || '(not provided — be conservative)'}
 
@@ -76,6 +72,12 @@ Invoice data: ${JSON.stringify(invoice)}
 Does this invoice plausibly relate to the user's business activity (true), or does it look personal/unrelated (false)?
 If unsure, prefer false and explain why in "reason". This classification affects a tax deduction decision, so do not guess favorably.`;
 
-  const result = await model.generateContent(prompt);
-  return JSON.parse(result.response.text()) as InvoiceClassification;
+  return withModelFallback(async (modelName) => {
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      generationConfig: { responseMimeType: 'application/json', responseSchema: classificationSchema },
+    });
+    const result = await model.generateContent(prompt);
+    return JSON.parse(result.response.text()) as InvoiceClassification;
+  });
 }

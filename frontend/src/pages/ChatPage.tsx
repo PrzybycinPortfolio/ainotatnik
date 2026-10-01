@@ -106,11 +106,18 @@ export function ChatPage() {
     ]);
 
     try {
-      await apiPost<{ response: string }>(`/conversations/${conversationId}/messages`, {
+      const result = await apiPost<{ response: string; failed?: boolean }>(`/conversations/${conversationId}/messages`, {
         message: text,
         ...(attachment && { attachment }),
       });
       await loadMessages(conversationId);
+      // AI failures come back as a message to show in the chat; it is not stored, so append it locally.
+      if (result.failed) {
+        setMessages((prev) => [
+          ...prev,
+          { id: `error-${Date.now()}`, conversation_id: conversationId!, role: 'model', content: result.response, created_at: new Date().toISOString() },
+        ]);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -152,7 +159,7 @@ export function ChatPage() {
             </p>
           )}
           {messages.map((m) => (
-            <div key={m.id} className={`chat-bubble ${m.role}`}>
+            <div key={m.id} className={`chat-bubble ${m.role}${m.id.startsWith('error-') ? ' chat-error' : ''}`}>
               <div className="chat-bubble-content">{m.content}</div>
             </div>
           ))}

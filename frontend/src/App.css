@@ -489,3 +489,8 @@
     opacity: 0.7;
   }
 }
+
+.chat-bubble.model.chat-error {
+  border: 1px solid #d9484f;
+  color: #d9484f;
+}
