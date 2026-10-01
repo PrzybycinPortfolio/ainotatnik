@@ -38,7 +38,9 @@ files.post('/', async (c) => {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const storagePath = `${userId}/${crypto.randomUUID()}-${file.name}`;
+  // Storage keys reject many non-ASCII chars (e.g. Polish diacritics); the original name stays in files.filename.
+  const safeName = file.name.normalize('NFKD').replace(/[^\w.-]+/g, '_');
+  const storagePath = `${userId}/${crypto.randomUUID()}-${safeName}`;
 
   const { error: uploadErr } = await supabase.storage
     .from(STORAGE_BUCKET)
