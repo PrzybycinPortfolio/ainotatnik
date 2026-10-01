@@ -67,7 +67,8 @@ export function startToolChatSession(
   const model = genAI.getGenerativeModel({
     model: modelName,
     systemInstruction: SYSTEM_PROMPT,
-    tools: [{ functionDeclarations }],
+    // An empty list means "no tools" (e.g. document-scoped turns); Gemini rejects an empty declarations array.
+    ...(functionDeclarations.length > 0 && { tools: [{ functionDeclarations }] }),
   });
   return model.startChat({ history });
 }

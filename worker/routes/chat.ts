@@ -108,8 +108,13 @@ chat.post('/:id/messages', async (c) => {
   const userMessage = parsed.data.message;
   const storedMessage = attachment ? `📎 ${attachment.name}\n${userMessage}` : userMessage;
   const modelMessage = attachment
-    ? `${userMessage}\n\n<local_file name="${attachment.name.replace(/"/g, "'")}">\n${attachment.text}\n</local_file>`
+    ? `${userMessage}\n\n<local_file name="${attachment.name.replace(/"/g, "'")}">\n${attachment.text}\n</local_file>\n\n` +
+      '(Answer strictly from the attached document above. If the question is not about this document or the ' +
+      'document does not contain the answer, say so instead of answering from general knowledge.)'
     : userMessage;
+  // With a document attached the answer must come from that document alone, so the model gets no tools:
+  // it cannot pull in other legal acts, notes or invoices even if it ignores the prompt.
+  const functionDeclarations = attachment ? [] : getFunctionDeclarations();
 
   const { error: insertErr } = await supabase
     .from('messages')
@@ -138,7 +143,7 @@ chat.post('/:id/messages', async (c) => {
     // Only the first call falls back to another model: once a tool has run, retrying
     // the whole turn elsewhere could repeat its side effects.
     const session = await withModelFallback(async (model) => {
-      const s = startToolChatSession(apiKey, model, getFunctionDeclarations(), geminiHistory);
+      const s = startToolChatSession(apiKey, model, functionDeclarations, geminiHistory);
       turnResult = await s.sendMessage(modelMessage);
       return s;
     });
