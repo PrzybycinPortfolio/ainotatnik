@@ -1,5 +1,5 @@
 -- Enable pgvector extension for semantic search
-create extension if not exists vector;
+create extension if not exists vector with schema extensions;
 
 -- ── Notes ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,8 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql
+set search_path = public;
 
 create trigger notes_updated_at
   before update on notes
