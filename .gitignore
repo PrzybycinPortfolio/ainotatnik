@@ -46,3 +46,8 @@ coverage/
 
 # Supabase local dev
 .supabase/
+
+# Cloudflare Workers local dev
+.wrangler/
+.dev.vars
+!.dev.vars.example
