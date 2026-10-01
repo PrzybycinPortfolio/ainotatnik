@@ -16,7 +16,6 @@
   },
   "include": [
     "index.ts",
-    "langsmithLogger.ts",
     "types/**/*.ts",
     "config/**/*.ts",
     "db/**/*.ts",

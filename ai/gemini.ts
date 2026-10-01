@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI, type Content } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 import { SYSTEM_PROMPT } from './prompts';
-import { traceable, log } from '../langsmithLogger';
 
 dotenv.config();
 
@@ -14,13 +13,11 @@ export function createChatModel() {
   });
 }
 
-async function _generateResponse(
+export async function generateResponse(
   userMessage: string,
   history: Content[] = [],
   contextPrompt = ''
 ): Promise<string> {
-  log('generateResponse', { messageLength: userMessage.length, historyLength: history.length });
-
   const model = createChatModel();
   const chat = model.startChat({ history });
 
@@ -32,22 +29,11 @@ async function _generateResponse(
   return result.response.text();
 }
 
-async function _generateText(prompt: string): Promise<string> {
-  log('generateText', { promptLength: prompt.length });
+export async function generateText(prompt: string): Promise<string> {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
   const result = await model.generateContent(prompt);
   return result.response.text();
 }
-
-export const generateResponse = traceable(_generateResponse as (...args: unknown[]) => Promise<unknown>, {
-  name: 'gemini.generateResponse',
-  runType: 'llm',
-}) as typeof _generateResponse;
-
-export const generateText = traceable(_generateText as (...args: unknown[]) => Promise<unknown>, {
-  name: 'gemini.generateText',
-  runType: 'llm',
-}) as typeof _generateText;
 
 export function messagesToHistory(
   messages: { role: 'user' | 'model'; content: string }[]

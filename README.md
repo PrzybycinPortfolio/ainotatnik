@@ -13,7 +13,6 @@ An AI-powered note-taking application with semantic search, built on **Gemini**,
 - **Conversational AI** — chat with an AI that retrieves relevant notes as context
 - **Conversation history** — all messages persisted per user
 - **Row Level Security** — each user can only access their own data
-- **LangSmith tracing** — optional observability for all LLM calls
 
 ---
 
@@ -53,7 +52,6 @@ MCP Client (e.g. Claude Desktop)
 | Vector search | pgvector |
 | AI protocol | Model Context Protocol (MCP) SDK v1 |
 | Schema validation | Zod |
-| Observability | LangSmith (optional) |
 
 ---
 
@@ -131,7 +129,6 @@ SUPABASE_ANON_KEY=your-anon-key
 GEMINI_API_KEY=your-gemini-api-key
 
 # Optional
-LANGSMITH_API_KEY=your-langsmith-key
 DEFAULT_USER_ID=your-user-uuid
 ```
 
@@ -213,18 +210,6 @@ Add this to your `claude_desktop_config.json`:
 | `npm run start` | Run compiled output |
 | `npm run typecheck` | Type-check without emitting (uses 8 GB heap due to MCP SDK type complexity) |
 | `npm run generate-embeddings` | Generate missing embeddings for all notes |
-
----
-
-## Observability
-
-If `LANGSMITH_API_KEY` is set, the following calls are automatically traced in LangSmith:
-
-- `gemini.generateResponse` — chat completions
-- `gemini.generateText` — one-shot text generation (used for summaries)
-- `createNote` / `updateNote` — note writes with embedding generation
-- `searchBySemantic` — vector search queries
-- `chat` — full conversation turns including context retrieval
 
 ---
 
