@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { apiDelete, apiGet, apiPost, apiPostForm } from '../lib/api';
+import { apiDelete, apiGet, apiPost } from '../lib/api';
+import { extractFileText } from '../lib/extractText';
 import type { Conversation, Message } from '../types';
 
 export function ChatPage() {
@@ -10,7 +11,8 @@ export function ChatPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Local file kept only in the browser and re-sent with every message until detached; never stored server-side.
-  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachment, setAttachment] = useState<{ name: string; text: string } | null>(null);
+  const [reading, setReading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -48,6 +50,19 @@ export function ChatPage() {
       setMessages([]);
     } catch (err) {
       setError((err as Error).message);
+    }
+  }
+
+  // Text is extracted once, in the browser; only the text is sent with messages.
+  async function handleAttach(file: File) {
+    setReading(true);
+    setError(null);
+    try {
+      setAttachment({ name: file.name, text: await extractFileText(file) });
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setReading(false);
     }
   }
 
@@ -91,15 +106,10 @@ export function ChatPage() {
     ]);
 
     try {
-      const path = `/conversations/${conversationId}/messages`;
-      if (attachment) {
-        const form = new FormData();
-        form.append('message', text);
-        form.append('file', attachment);
-        await apiPostForm<{ response: string }>(path, form);
-      } else {
-        await apiPost<{ response: string }>(path, { message: text });
-      }
+      await apiPost<{ response: string }>(`/conversations/${conversationId}/messages`, {
+        message: text,
+        ...(attachment && { attachment }),
+      });
       await loadMessages(conversationId);
     } catch (err) {
       setError((err as Error).message);
@@ -167,10 +177,10 @@ export function ChatPage() {
             type="button"
             className="attach-btn"
             onClick={() => fileInputRef.current?.click()}
-            disabled={sending}
+            disabled={sending || reading}
             title="Dołącz plik z komputera bez wgrywania (PDF / DOCX / TXT / MD)"
           >
-            📎
+            {reading ? '…' : '📎'}
           </button>
           <input
             ref={fileInputRef}
@@ -178,8 +188,9 @@ export function ChatPage() {
             accept=".pdf,.docx,.txt,.md"
             hidden
             onChange={(e) => {
-              setAttachment(e.target.files?.[0] ?? null);
+              const file = e.target.files?.[0];
               e.target.value = '';
+              if (file) handleAttach(file);
             }}
           />
           <input

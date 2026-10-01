@@ -1,13 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { extractDocumentText } from './documentExtract';
 import { extractInvoiceFields, classifyInvoice } from './geminiStructured';
 
 // Runs after the upload response has already been sent (via c.executionCtx.waitUntil),
 // so failures here must update `files.status` rather than throw back to a caller.
 export async function processInvoiceFile(
   fileId: string,
-  bytes: Uint8Array,
-  mimeType: string,
+  text: string,
   supabase: SupabaseClient,
   userId: string,
   apiKey: string
@@ -15,7 +13,6 @@ export async function processInvoiceFile(
   try {
     await supabase.from('files').update({ status: 'processing' }).eq('id', fileId);
 
-    const text = await extractDocumentText(mimeType, bytes);
     const extracted = await extractInvoiceFields(apiKey, text);
 
     const { data: profile } = await supabase

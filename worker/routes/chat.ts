@@ -4,7 +4,6 @@ import type { Content } from '@google/generative-ai';
 import type { AppBindings } from '../types';
 import { generateNoteEmbedding, startToolChatSession } from '../lib/gemini';
 import { getFunctionDeclarations, executeTool, DISCLAIMER_REQUIRED_TOOLS } from '../tools/registry';
-import { extractDocumentText, SUPPORTED_UPLOAD_MIME_TYPES } from '../lib/documentExtract';
 
 const chat = new Hono<AppBindings>();
 
@@ -30,42 +29,18 @@ function ensureDisclaimer(response: string, toolsUsed: Set<string>): string {
   return FALLBACK_DISCLAIMER + response;
 }
 
-const messageSchema = z.object({ message: z.string().min(1).max(4000) });
-
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB, same as uploads
-const MAX_ATTACHMENT_CHARS = 60_000;
-const MIME_BY_EXTENSION: Record<string, string> = {
-  pdf: 'application/pdf',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  txt: 'text/plain',
-  md: 'text/markdown',
-};
-
-type Attachment = { name: string; text: string };
-
-// A local file sent with the message: its text is extracted in memory and
-// passed to the model for this turn only. Nothing is written to Storage or
-// the database except a "📎 name" marker on the user's message.
-async function readAttachment(file: File): Promise<Attachment> {
-  const mimeType = file.type || MIME_BY_EXTENSION[file.name.split('.').pop()?.toLowerCase() ?? ''] || '';
-  if (!SUPPORTED_UPLOAD_MIME_TYPES.includes(mimeType)) throw new Error(`unsupported file type: ${file.type || file.name}`);
-  if (file.size > MAX_ATTACHMENT_BYTES) throw new Error('file too large (max 10MB)');
-
-  const text = (await extractDocumentText(mimeType, new Uint8Array(await file.arrayBuffer()))).trim();
-  if (!text) throw new Error('no text could be read from the file (scanned PDF?)');
-  return { name: file.name, text: text.slice(0, MAX_ATTACHMENT_CHARS) };
-}
-
-// Accepts JSON {message} or multipart form data with "message" and an optional "file".
-async function parseMessageRequest(req: Request): Promise<{ message: unknown; file: File | null }> {
-  if (req.headers.get('content-type')?.startsWith('multipart/form-data')) {
-    const form = await req.formData().catch(() => null);
-    const file = form?.get('file');
-    return { message: form?.get('message'), file: file instanceof File && file.size > 0 ? file : null };
-  }
-  const body = (await req.json().catch(() => null)) as { message?: unknown } | null;
-  return { message: body?.message, file: null };
-}
+// Optional local-file attachment: the browser extracts the text (parsing PDFs
+// here exceeds the Workers CPU limit) and sends it with every message until
+// detached. Nothing is stored except a "📎 name" marker on the user's message.
+const messageSchema = z.object({
+  message: z.string().min(1).max(4000),
+  attachment: z
+    .object({
+      name: z.string().min(1).max(255),
+      text: z.string().min(1).max(60_000),
+    })
+    .optional(),
+});
 
 chat.post('/', async (c) => {
   const { data, error } = await c
@@ -120,19 +95,10 @@ chat.get('/:id/messages', async (c) => {
 
 chat.post('/:id/messages', async (c) => {
   const conversationId = c.req.param('id');
-  const request = await parseMessageRequest(c.req.raw);
-  const parsed = messageSchema.safeParse({ message: request.message });
+  const parsed = messageSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
-  let attachment: Attachment | null = null;
-  if (request.file) {
-    try {
-      attachment = await readAttachment(request.file);
-    } catch (err) {
-      return c.json({ error: (err as Error).message }, 400);
-    }
-  }
-
+  const attachment = parsed.data.attachment;
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const apiKey = c.env.GEMINI_API_KEY;

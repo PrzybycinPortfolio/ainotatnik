@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import type { AppBindings } from '../types';
-import { SUPPORTED_UPLOAD_MIME_TYPES } from '../lib/documentExtract';
+import { SUPPORTED_UPLOAD_MIME_TYPES, detectMimeType } from '../lib/documentExtract';
 import { processInvoiceFile } from '../lib/invoiceProcessing';
 
 const files = new Hono<AppBindings>();
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_TEXT_CHARS = 60_000;
 const STORAGE_BUCKET = 'uploads';
 
 files.get('/', async (c) => {
@@ -30,11 +31,18 @@ files.post('/', async (c) => {
     return c.json({ error: 'missing "file" field in multipart form data' }, 400);
   }
 
-  if (!SUPPORTED_UPLOAD_MIME_TYPES.includes(file.type)) {
-    return c.json({ error: `unsupported file type: ${file.type}` }, 400);
+  const mimeType = detectMimeType(file.name, file.type);
+  if (!SUPPORTED_UPLOAD_MIME_TYPES.includes(mimeType)) {
+    return c.json({ error: `unsupported file type: ${file.type || file.name}` }, 400);
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return c.json({ error: 'file too large (max 10MB)' }, 400);
+  }
+
+  // The browser extracts the text: parsing PDFs here exceeds the Workers CPU limit.
+  const text = formData?.get('text');
+  if (typeof text !== 'string' || !text.trim()) {
+    return c.json({ error: 'missing "text" field with the extracted document text' }, 400);
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -44,20 +52,22 @@ files.post('/', async (c) => {
 
   const { error: uploadErr } = await supabase.storage
     .from(STORAGE_BUCKET)
-    .upload(storagePath, bytes, { contentType: file.type });
+    .upload(storagePath, bytes, { contentType: mimeType });
   if (uploadErr) return c.json({ error: uploadErr.message }, 500);
 
   const { data: fileRow, error: insertErr } = await supabase
     .from('files')
-    .insert({ user_id: userId, filename: file.name, mime_type: file.type, storage_path: storagePath, status: 'pending' })
+    .insert({ user_id: userId, filename: file.name, mime_type: mimeType, storage_path: storagePath, status: 'pending' })
     .select()
     .single();
   if (insertErr) return c.json({ error: insertErr.message }, 500);
 
   // Respond immediately; keep processing after the response is sent. The
   // request's own RLS-scoped client is reused — the user's JWT stays valid
-  // for the short time this takes (text extraction + two Gemini calls).
-  c.executionCtx.waitUntil(processInvoiceFile(fileRow.id, bytes, file.type, supabase, userId, c.env.GEMINI_API_KEY));
+  // for the short time this takes (two Gemini calls).
+  c.executionCtx.waitUntil(
+    processInvoiceFile(fileRow.id, text.slice(0, MAX_TEXT_CHARS), supabase, userId, c.env.GEMINI_API_KEY)
+  );
 
   return c.json(fileRow, 202);
 });

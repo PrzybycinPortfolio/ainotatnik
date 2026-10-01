@@ -45,18 +45,10 @@ export async function apiDelete(path: string): Promise<void> {
   await handle<void>(res);
 }
 
-export async function apiUpload<T>(path: string, file: File): Promise<T> {
+export async function apiUpload<T>(path: string, file: File, fields: Record<string, string> = {}): Promise<T> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await fetch(`${API_URL}${path}`, {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: formData,
-  });
-  return handle<T>(res);
-}
-
-export async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
+  for (const [key, value] of Object.entries(fields)) formData.append(key, value);
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     headers: await authHeaders(),

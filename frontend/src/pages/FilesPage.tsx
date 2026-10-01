@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiDelete, apiGet, apiUpload } from '../lib/api';
+import { extractFileText } from '../lib/extractText';
 import type { FileRow } from '../types';
 
 const STATUS_LABELS: Record<FileRow['status'], string> = {
@@ -36,7 +37,9 @@ export function FilesPage() {
     setUploading(true);
     setError(null);
     try {
-      await apiUpload<FileRow>('/files', file);
+      // Text is extracted in the browser; the Worker only stores the file and runs the AI steps.
+      const text = await extractFileText(file);
+      await apiUpload<FileRow>('/files', file, { text });
       await load();
     } catch (err) {
       setError((err as Error).message);
