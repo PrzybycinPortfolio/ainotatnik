@@ -416,3 +416,14 @@
   opacity: 0.6;
   cursor: default;
 }
+
+.file-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+}

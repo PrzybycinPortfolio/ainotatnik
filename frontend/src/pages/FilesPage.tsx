@@ -46,6 +46,20 @@ export function FilesPage() {
     }
   }
 
+  async function handleOpen(file: FileRow) {
+    // Open the tab synchronously so popup blockers allow it, then point it at the signed URL.
+    const tab = window.open('', '_blank');
+    setError(null);
+    try {
+      const { url } = await apiGet<{ url: string }>(`/files/${file.id}/url`);
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+    } catch (err) {
+      tab?.close();
+      setError((err as Error).message);
+    }
+  }
+
   async function handleDelete(file: FileRow) {
     if (!confirm(`Usunąć plik "${file.filename}"? Faktury odczytane z tego pliku też zostaną usunięte.`)) return;
 
@@ -95,7 +109,11 @@ export function FilesPage() {
         <tbody>
           {files.map((f) => (
             <tr key={f.id}>
-              <td>{f.filename}</td>
+              <td>
+                <button className="file-link" onClick={() => handleOpen(f)} title="Otwórz plik">
+                  {f.filename}
+                </button>
+              </td>
               <td>
                 <span className={`status-badge status-${f.status}`}>{STATUS_LABELS[f.status]}</span>
                 {f.status === 'error' && f.error_message && <div className="file-error-detail">{f.error_message}</div>}

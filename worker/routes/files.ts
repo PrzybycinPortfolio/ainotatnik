@@ -62,6 +62,25 @@ files.post('/', async (c) => {
   return c.json(fileRow, 202);
 });
 
+// Short-lived signed URL so the browser can open the private object directly.
+files.get('/:id/url', async (c) => {
+  const supabase = c.get('supabase');
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'invalid file id' }, 400);
+
+  const { data: fileRow, error: selectErr } = await supabase
+    .from('files')
+    .select('storage_path')
+    .eq('id', id)
+    .maybeSingle();
+  if (selectErr) return c.json({ error: selectErr.message }, 500);
+  if (!fileRow) return c.json({ error: 'file not found' }, 404);
+
+  const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(fileRow.storage_path, 60);
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ url: data.signedUrl });
+});
+
 // Deletes the stored object, the invoices extracted from it and the file row.
 // RLS scopes every query to the caller, so another user's id simply 404s.
 files.delete('/:id', async (c) => {
