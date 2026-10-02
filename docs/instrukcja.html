@@ -228,7 +228,7 @@
 <!-- ───────────── 4. Faktury i KUP ───────────── -->
 <section>
   <h2>4. Faktury i koszty uzyskania przychodu (KUP)</h2>
-  <p>Zakładka <span class="ui">Pliki</span> służy do dokumentów, które mają zostać <b>zapisane</b> w aplikacji. Każdy wgrany plik AI traktuje jak fakturę: odczytuje numer, kontrahenta, datę, kwoty netto/VAT/brutto i kategorię, a następnie ocenia, czy wydatek wygląda na firmowy.</p>
+  <p>Zakładka <span class="ui">Pliki</span> służy do dokumentów, które mają zostać <b>zapisane</b> w aplikacji. Każdy wgrany plik AI traktuje jak fakturę: odczytuje numer, kontrahenta, datę, kwoty netto/VAT/brutto i kategorię. <b>Każda faktura jest domyślnie traktowana jako firmowa</b> i liczy się do KUP — prywatne wydatki wykluczasz w czacie (zob. scenariusz 2).</p>
 
   <h3>Wgrywanie faktury</h3>
   <ol class="steps">
@@ -263,7 +263,7 @@
   <p>Na koniec miesiąca wgraj wszystkie faktury kosztowe, a następnie zapytaj w czacie:</p>
   <div class="chat">
     <div class="msg user">Policz koszty uzyskania przychodu za wrzesień 2026</div>
-    <div class="msg ai">Suma kosztów firmowych za 01.09–30.09.2026: <b>4 812,40 zł netto</b> z 7 faktur. Pominąłem 1 fakturę ocenioną jako prywatna (Sklep XYZ, 14.09).<br><small>⚠️ To materiał pomocniczy — zweryfikuj z księgowym przed złożeniem deklaracji.</small></div>
+    <div class="msg ai">Suma kosztów firmowych za 01.09–30.09.2026: <b>4 812,40 zł netto</b> z 7 faktur. Pominąłem 1 fakturę, którą wcześniej wykluczyłeś (Sklep XYZ, 14.09).<br><small>⚠️ To materiał pomocniczy — zweryfikuj z księgowym przed złożeniem deklaracji.</small></div>
   </div>
 
   <h3>Scenariusz 2: Wykluczenie prywatnego wydatku</h3>
@@ -282,7 +282,7 @@
     <li>„Znajdź faktury z kategorii paliwo za sierpień”</li>
   </ul>
 
-  <div class="box warn"><b>Ważne o wyliczeniach KUP</b>Wynik to suma kwot netto faktur ocenionych jako firmowe. Aplikacja <b>nie uwzględnia</b> szczególnych zasad (np. limitów dla samochodów osobowych czy kosztów reprezentacji). Traktuj wynik jako pomoc i zawsze konsultuj go z księgowym.</div>
+  <div class="box warn"><b>Ważne o wyliczeniach KUP</b>Wynik to suma kwot netto wszystkich faktur z okresu, z wyjątkiem tych, które wykluczyłeś. Aplikacja <b>nie uwzględnia</b> szczególnych zasad (np. limitów dla samochodów osobowych czy kosztów reprezentacji). Traktuj wynik jako pomoc i zawsze konsultuj go z księgowym.</div>
 </section>
 
 <!-- ───────────── 5. Plik z komputera ───────────── -->
@@ -397,7 +397,7 @@
     <tr><td>„Nieobsługiwany typ pliku”</td><td>Obsługiwane: PDF, DOCX, TXT, MD. Pliki .doc, .xls czy zdjęcia zapisz najpierw jako PDF lub DOCX.</td></tr>
     <tr><td>Faktura ma status „Błąd”</td><td>Aplikacja ponawia takie pliki automatycznie (do 3 razy), gdy karta jest otwarta. Potem kliknij <span class="ui">Ponów</span> przy pliku albo zaznacz kilka i wybierz <span class="ui">Ponów błędne</span>.</td></tr>
     <tr><td>Asystent odmawia odpowiedzi na pytanie</td><td>Sprawdź, czy nie masz dołączonego pliku 📎 — wtedy odpowiada tylko o nim. Odepnij plik (✕) i zapytaj ponownie.</td></tr>
-    <tr><td>Wynik KUP wydaje się zbyt niski</td><td>Zapytaj: „Które faktury zostały pominięte i dlaczego?” — część mogła zostać oceniona jako prywatna.</td></tr>
+    <tr><td>Wynik KUP wydaje się zbyt wysoki lub niski</td><td>Zapytaj: „Pokaż faktury za wrzesień” — sprawdź, czy nie brakuje faktur i czy wśród nich nie ma prywatnych do wykluczenia. Faktura ze statusem „Błąd” nie jest liczona.</td></tr>
     <tr><td>Nie przyszedł mail z potwierdzeniem konta</td><td>Sprawdź spam; odczekaj kilka minut i spróbuj zarejestrować się ponownie.</td></tr>
     <tr><td>Długi dokument — asystent „nie widzi” końca</td><td>Analizowane jest ok. 60 000 znaków (ok. 30 stron). Przy dłuższych dokumentach dołącz tylko potrzebny fragment.</td></tr>
   </table>
@@ -420,7 +420,7 @@
     <li>Policz koszty uzyskania przychodu za ostatni miesiąc</li>
     <li>Ile wydałem na paliwo w trzecim kwartale 2026?</li>
     <li>Pokaż wszystkie faktury od firmy ABC</li>
-    <li>Które faktury zostały uznane za prywatne i dlaczego?</li>
+    <li>Które faktury są wykluczone z kosztów?</li>
     <li>Wyklucz z kosztów fakturę z IKEA z 3 września</li>
   </ul>
 
