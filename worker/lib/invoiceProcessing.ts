@@ -5,6 +5,17 @@ import { extractInvoiceFields } from './geminiStructured';
 // private ones explicitly (exclude_invoices tool), so no AI classification step.
 const DEFAULT_CLASSIFICATION_REASON = 'Domyślnie uznana za firmową — wyklucz ją, jeśli to wydatek prywatny.';
 
+const STORAGE_BUCKET = 'uploads';
+
+async function rejectFile(supabase: SupabaseClient, fileId: string, message: string): Promise<void> {
+  const { data: fileRow } = await supabase.from('files').select('storage_path').eq('id', fileId).maybeSingle();
+  if (fileRow?.storage_path) {
+    const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([fileRow.storage_path]);
+    if (error) console.error(`Could not remove rejected file ${fileId} from storage:`, error.message);
+  }
+  await supabase.from('files').update({ status: 'rejected', error_message: message }).eq('id', fileId);
+}
+
 // Runs after the upload response has already been sent (via c.executionCtx.waitUntil),
 // so failures here must update `files.status` rather than throw back to a caller.
 export async function processInvoiceFile(
@@ -18,6 +29,17 @@ export async function processInvoiceFile(
     await supabase.from('files').update({ status: 'processing' }).eq('id', fileId);
 
     const extracted = await extractInvoiceFields(apiKey, text);
+
+    // Not an invoice (or one with no amount at all): never let it into KUP, and
+    // don't keep the stored file — it could be anything the user picked by mistake.
+    const hasAmount = [extracted.net_amount, extracted.vat_amount, extracted.gross_amount].some((v) => v != null);
+    if (!extracted.is_invoice || !hasAmount) {
+      const reason = !extracted.is_invoice
+        ? extracted.not_invoice_reason || 'Dokument nie wygląda na fakturę ani rachunek.'
+        : 'Nie znaleziono w dokumencie żadnej kwoty do zapłaty.';
+      await rejectFile(supabase, fileId, `To nie jest faktura — ${reason.replace(/\.$/, '')}. Plik nie został zapisany.`);
+      return;
+    }
 
     const { error: insertErr } = await supabase.from('invoices').insert({
       user_id: userId,

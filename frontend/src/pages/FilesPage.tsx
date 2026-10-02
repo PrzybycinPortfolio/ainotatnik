@@ -8,6 +8,7 @@ const STATUS_LABELS: Record<FileRow['status'], string> = {
   processing: 'Przetwarzanie…',
   done: 'Gotowe',
   error: 'Błąd',
+  rejected: 'Odrzucono — to nie faktura',
 };
 
 // Bulk operations run a few at a time: each upload triggers two Gemini calls,
@@ -360,13 +361,20 @@ export function FilesPage() {
                 />
               </td>
               <td>
-                <button className="file-link" onClick={() => handleOpen(f)} title="Otwórz plik">
-                  {f.filename}
-                </button>
+                {/* A rejected file's stored copy is deleted, so there is nothing to open. */}
+                {f.status === 'rejected' ? (
+                  <span className="file-name-muted">{f.filename}</span>
+                ) : (
+                  <button className="file-link" onClick={() => handleOpen(f)} title="Otwórz plik">
+                    {f.filename}
+                  </button>
+                )}
               </td>
               <td>
                 <span className={`status-badge status-${f.status}`}>{STATUS_LABELS[f.status]}</span>
-                {f.status === 'error' && f.error_message && <div className="file-error-detail">{f.error_message}</div>}
+                {(f.status === 'error' || f.status === 'rejected') && f.error_message && (
+                  <div className="file-error-detail">{f.error_message}</div>
+                )}
               </td>
               <td>{new Date(f.created_at).toLocaleString('pl-PL')}</td>
               <td className="row-actions">

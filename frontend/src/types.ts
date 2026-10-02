@@ -26,7 +26,7 @@ export interface FileRow {
   user_id: string;
   filename: string;
   mime_type: string;
-  status: 'pending' | 'processing' | 'done' | 'error';
+  status: 'pending' | 'processing' | 'done' | 'error' | 'rejected';
   error_message: string | null;
   created_at: string;
 }
