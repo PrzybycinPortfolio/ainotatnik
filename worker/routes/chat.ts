@@ -32,18 +32,30 @@ function ensureDisclaimer(response: string, toolsUsed: Set<string>): string {
   return FALLBACK_DISCLAIMER + response;
 }
 
-// Optional local-file attachment: the browser extracts the text (parsing PDFs
-// here exceeds the Workers CPU limit) and sends it with every message until
-// detached. Nothing is stored except a "📎 name" marker on the user's message.
-const messageSchema = z.object({
-  message: z.string().min(1).max(4000),
-  attachment: z
-    .object({
-      name: z.string().min(1).max(255),
-      text: z.string().min(1).max(60_000),
-    })
-    .optional(),
+// Optional local-file attachments (e.g. a batch of invoices): the browser
+// extracts the text (parsing PDFs here exceeds the Workers CPU limit) and sends
+// it with every message until detached. Nothing is stored except a "📎 names"
+// marker on the user's message.
+const MAX_ATTACHMENTS = 100;
+const MAX_ATTACHMENTS_TOTAL_CHARS = 500_000; // ~125k tokens; the frontend trims files to fit
+const attachmentSchema = z.object({
+  name: z.string().min(1).max(255),
+  text: z.string().min(1).max(60_000),
 });
+const messageSchema = z
+  .object({
+    message: z.string().min(1).max(4000),
+    attachments: z.array(attachmentSchema).max(MAX_ATTACHMENTS).optional(),
+  })
+  .refine((v) => (v.attachments ?? []).reduce((sum, a) => sum + a.text.length, 0) <= MAX_ATTACHMENTS_TOTAL_CHARS, {
+    message: 'attachments too large in total',
+  });
+
+function attachmentMarker(names: string[]): string {
+  if (names.length === 1) return `📎 ${names[0]}`;
+  const shown = names.slice(0, 5).join(', ');
+  return `📎 ${names.length} plików: ${shown}${names.length > 5 ? `, … (+${names.length - 5})` : ''}`;
+}
 
 chat.post('/', async (c) => {
   const { data, error } = await c
@@ -101,20 +113,26 @@ chat.post('/:id/messages', async (c) => {
   const parsed = messageSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: parsed.error.flatten() }, 400);
 
-  const attachment = parsed.data.attachment;
+  const attachments = parsed.data.attachments ?? [];
+  const hasAttachments = attachments.length > 0;
   const supabase = c.get('supabase');
   const userId = c.get('userId');
   const apiKey = c.env.GEMINI_API_KEY;
   const userMessage = parsed.data.message;
-  const storedMessage = attachment ? `📎 ${attachment.name}\n${userMessage}` : userMessage;
-  const modelMessage = attachment
-    ? `${userMessage}\n\n<local_file name="${attachment.name.replace(/"/g, "'")}">\n${attachment.text}\n</local_file>\n\n` +
-      '(Answer strictly from the attached document above. If the question is not about this document or the ' +
-      'document does not contain the answer, say so instead of answering from general knowledge.)'
+  const storedMessage = hasAttachments
+    ? `${attachmentMarker(attachments.map((a) => a.name))}\n${userMessage}`
     : userMessage;
-  // With a document attached the answer must come from that document alone, so the model gets no tools:
-  // it cannot pull in other legal acts, notes or invoices even if it ignores the prompt.
-  const functionDeclarations = attachment ? [] : getFunctionDeclarations();
+  const modelMessage = hasAttachments
+    ? `${userMessage}\n\n` +
+      attachments
+        .map((a) => `<local_file name="${a.name.replace(/"/g, "'")}">\n${a.text}\n</local_file>`)
+        .join('\n\n') +
+      `\n\n(${attachments.length} attached document(s) above. Answer strictly from them. If the question is not ` +
+      'about these documents or they do not contain the answer, say so instead of answering from general knowledge.)'
+    : userMessage;
+  // With documents attached the answer must come from them alone, so the model gets no tools:
+  // it cannot pull in other legal acts, notes or saved invoices even if it ignores the prompt.
+  const functionDeclarations = hasAttachments ? [] : getFunctionDeclarations();
 
   const { error: insertErr } = await supabase
     .from('messages')

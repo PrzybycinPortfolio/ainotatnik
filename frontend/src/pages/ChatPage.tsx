@@ -3,6 +3,25 @@ import { apiDelete, apiGet, apiPost } from '../lib/api';
 import { extractFileText } from '../lib/extractText';
 import type { Conversation, Message } from '../types';
 
+type Attachment = { name: string; text: string };
+
+// Matches the Worker's limits: at most 100 files and ~500k characters in total
+// per message. When many files are attached, each is trimmed to fit the budget.
+const MAX_ATTACHMENTS = 100;
+const ATTACHMENTS_TOTAL_CHARS = 490_000;
+const PER_FILE_MAX_CHARS = 60_000;
+
+function fitToBudget(list: Attachment[]): Attachment[] {
+  const perFile = Math.min(PER_FILE_MAX_CHARS, Math.floor(ATTACHMENTS_TOTAL_CHARS / Math.max(list.length, 1)));
+  return list.map((a) => ({ name: a.name, text: a.text.slice(0, perFile) }));
+}
+
+function attachmentMarker(names: string[]): string {
+  if (names.length === 1) return `📎 ${names[0]}`;
+  const shown = names.slice(0, 5).join(', ');
+  return `📎 ${names.length} plików: ${shown}${names.length > 5 ? `, … (+${names.length - 5})` : ''}`;
+}
+
 export function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -10,9 +29,12 @@ export function ChatPage() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Local file kept only in the browser and re-sent with every message until detached; never stored server-side.
-  const [attachment, setAttachment] = useState<{ name: string; text: string } | null>(null);
-  const [reading, setReading] = useState(false);
+  // Local files kept only in the browser and re-sent with every message until detached; never stored server-side.
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [reading, setReading] = useState<{ done: number; total: number } | null>(null);
+  const [showAttachmentList, setShowAttachmentList] = useState(false);
+  const trimmed =
+    attachments.length > 0 && fitToBudget(attachments).some((a, i) => a.text.length < attachments[i].text.length);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -54,16 +76,33 @@ export function ChatPage() {
   }
 
   // Text is extracted once, in the browser; only the text is sent with messages.
-  async function handleAttach(file: File) {
-    setReading(true);
-    setError(null);
-    try {
-      setAttachment({ name: file.name, text: await extractFileText(file) });
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setReading(false);
+  // Picking more files adds to the current set (up to MAX_ATTACHMENTS).
+  async function handleAttach(picked: File[]) {
+    const room = MAX_ATTACHMENTS - attachments.length;
+    const files = picked.slice(0, Math.max(room, 0));
+    const problems: string[] = [];
+    if (picked.length > files.length) {
+      problems.push(`Można dołączyć maksymalnie ${MAX_ATTACHMENTS} plików — pominięto ${picked.length - files.length}.`);
     }
+
+    setError(null);
+    setReading({ done: 0, total: files.length });
+    const added: Attachment[] = [];
+    for (const file of files) {
+      try {
+        added.push({ name: file.name, text: await extractFileText(file) });
+      } catch (err) {
+        problems.push(`${file.name}: ${(err as Error).message}`);
+      }
+      setReading((r) => (r ? { ...r, done: r.done + 1 } : r));
+    }
+    setAttachments((prev) => [...prev, ...added]);
+    setReading(null);
+    if (problems.length > 0) setError(problems.join('\n'));
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function deleteConversation(conv: Conversation) {
@@ -99,7 +138,7 @@ export function ChatPage() {
     setInput('');
     setSending(true);
     setError(null);
-    const content = attachment ? `📎 ${attachment.name}\n${text}` : text;
+    const content = attachments.length > 0 ? `${attachmentMarker(attachments.map((a) => a.name))}\n${text}` : text;
     setMessages((prev) => [
       ...prev,
       { id: `optimistic-${Date.now()}`, conversation_id: conversationId!, role: 'user', content, created_at: new Date().toISOString() },
@@ -108,7 +147,7 @@ export function ChatPage() {
     try {
       const result = await apiPost<{ response: string; failed?: boolean }>(`/conversations/${conversationId}/messages`, {
         message: text,
-        ...(attachment && { attachment }),
+        ...(attachments.length > 0 && { attachments: fitToBudget(attachments) }),
       });
       await loadMessages(conversationId);
       // AI failures come back as a message to show in the chat; it is not stored, so append it locally.
@@ -168,14 +207,57 @@ export function ChatPage() {
 
         {error && <p className="auth-error">{error}</p>}
 
-        {attachment && (
+        {reading && (
           <div className="chat-attachment">
-            <span title="Plik nie jest zapisywany w aplikacji — jest wysyłany do AI razem z każdą wiadomością">
-              📎 {attachment.name} <small>(z komputera, bez zapisu)</small>
+            <span>
+              Odczytywanie plików… {reading.done}/{reading.total}
             </span>
-            <button type="button" onClick={() => setAttachment(null)} aria-label="Odepnij plik">
-              ✕
-            </button>
+          </div>
+        )}
+
+        {attachments.length > 0 && (
+          <div className="chat-attachments">
+            <div className="chat-attachment">
+              <span title="Pliki nie są zapisywane w aplikacji — ich tekst jest wysyłany do AI razem z każdą wiadomością">
+                📎 {attachments.length === 1 ? attachments[0].name : `${attachments.length} plików`}{' '}
+                <small>(z komputera, bez zapisu)</small>
+              </span>
+              <span className="chat-attachment-actions">
+                {attachments.length > 1 && (
+                  <button type="button" onClick={() => setShowAttachmentList((v) => !v)}>
+                    {showAttachmentList ? 'Ukryj listę' : 'Pokaż listę'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAttachments([]);
+                    setShowAttachmentList(false);
+                  }}
+                  aria-label="Odepnij wszystkie pliki"
+                  title="Odepnij wszystkie"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+            {trimmed && (
+              <p className="chat-attachment-note">
+                Dużo plików naraz — z każdego wysyłany jest początkowy fragment tekstu, żeby zmieścić się w limicie.
+              </p>
+            )}
+            {showAttachmentList && attachments.length > 1 && (
+              <ul className="chat-attachment-list">
+                {attachments.map((a, i) => (
+                  <li key={`${a.name}-${i}`}>
+                    <span>{a.name}</span>
+                    <button type="button" onClick={() => removeAttachment(i)} aria-label={`Odepnij ${a.name}`}>
+                      ✕
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -184,8 +266,8 @@ export function ChatPage() {
             type="button"
             className="attach-btn"
             onClick={() => fileInputRef.current?.click()}
-            disabled={sending || reading}
-            title="Dołącz plik z komputera bez wgrywania (PDF / DOCX / TXT / MD)"
+            disabled={sending || reading !== null}
+            title="Dołącz pliki z komputera bez wgrywania (PDF / DOCX / TXT / MD) — można zaznaczyć wiele"
           >
             {reading ? '…' : '📎'}
           </button>
@@ -193,11 +275,12 @@ export function ChatPage() {
             ref={fileInputRef}
             type="file"
             accept=".pdf,.docx,.txt,.md"
+            multiple
             hidden
             onChange={(e) => {
-              const file = e.target.files?.[0];
+              const picked = Array.from(e.target.files ?? []);
               e.target.value = '';
-              if (file) handleAttach(file);
+              if (picked.length > 0) handleAttach(picked);
             }}
           />
           <input
