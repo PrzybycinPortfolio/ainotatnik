@@ -1,0 +1,12 @@
+// Static frontend served as a Worker with assets (Cloudflare's successor to Pages).
+// Deploy with `npm run deploy:frontend` from the repo root.
+{
+  "name": "ai-notatnik",
+  "account_id": "863486c167068e7f993969d452985e86", // karolp05082002
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Client-side routing: unknown paths fall back to index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -1,11 +1,12 @@
 name = "ai-notatnik-api"
+account_id = "863486c167068e7f993969d452985e86" # karolp05082002 — pinned so deploys never land on another logged-in account
 main = "worker/index.ts"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# Restrict to the deployed frontend origin before going live, e.g. ALLOWED_ORIGIN = "https://ai-notatnik.pages.dev"
-ALLOWED_ORIGIN = "https://ai-notatnik.pages.dev,https://*.ai-notatnik.pages.dev"
+# Frontend origin(s) allowed by CORS: comma-separated, "https://*.domain" matches subdomains.
+ALLOWED_ORIGIN = "https://ai-notatnik.karolp05082002.workers.dev"
 
 # Secrets — never put these here. Set them with:
 #   wrangler secret put SUPABASE_URL
