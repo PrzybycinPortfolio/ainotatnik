@@ -13,7 +13,7 @@
     "ingest-legal-act": "ts-node scripts/ingestLegalAct.ts",
     "dev:worker": "wrangler dev",
     "deploy:worker": "wrangler deploy",
-    "deploy:frontend": "cd frontend && npm run build && wrangler deploy --env-file ../.env",
+    "deploy:frontend": "cd frontend && npm run build && wrangler pages deploy dist --project-name ai-notatnik --branch master --commit-dirty=true --env-file ../.env",
     "deploy": "npm run deploy:worker && npm run deploy:frontend"
   },
   "dependencies": {

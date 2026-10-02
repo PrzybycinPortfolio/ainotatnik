@@ -6,7 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Frontend origin(s) allowed by CORS: comma-separated, "https://*.domain" matches subdomains.
-ALLOWED_ORIGIN = "https://ai-notatnik.karolp05082002.workers.dev"
+ALLOWED_ORIGIN = "https://ai-notatnik.pages.dev,https://*.ai-notatnik.pages.dev"
 
 # Secrets — never put these here. Set them with:
 #   wrangler secret put SUPABASE_URL
