@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { Markdown } from '../components/Markdown';
 import { apiDelete, apiGet, apiPost } from '../lib/api';
 import { extractFileText } from '../lib/extractText';
 import type { Conversation, Message } from '../types';
@@ -202,16 +201,7 @@ export function ChatPage() {
           {messages.map((m) => (
             <div key={m.id} className={`chat-bubble ${m.role}${m.id.startsWith('error-') ? ' chat-error' : ''}`}>
               {m.role === 'model' ? (
-                // Raw HTML is not rendered (react-markdown's default), so model output
-                // or attached-document text can't inject markup into the page.
-                <div className="chat-bubble-content markdown">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{ a: (props) => <a {...props} target="_blank" rel="noopener noreferrer" /> }}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
-                </div>
+                <Markdown className="chat-bubble-content">{m.content}</Markdown>
               ) : (
                 <div className="chat-bubble-content">{m.content}</div>
               )}

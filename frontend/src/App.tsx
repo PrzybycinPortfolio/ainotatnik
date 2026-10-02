@@ -3,9 +3,10 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthPage } from './pages/AuthPage';
 import { ChatPage } from './pages/ChatPage';
 import { FilesPage } from './pages/FilesPage';
+import { NotesPage } from './pages/NotesPage';
 import './App.css';
 
-type Tab = 'chat' | 'files';
+type Tab = 'chat' | 'notes' | 'files';
 
 function Shell() {
   const { session, loading, signOut } = useAuth();
@@ -22,6 +23,9 @@ function Shell() {
           <button className={tab === 'chat' ? 'active' : ''} onClick={() => setTab('chat')}>
             Czat
           </button>
+          <button className={tab === 'notes' ? 'active' : ''} onClick={() => setTab('notes')}>
+            Notatki
+          </button>
           <button className={tab === 'files' ? 'active' : ''} onClick={() => setTab('files')}>
             Faktury
           </button>
@@ -32,7 +36,11 @@ function Shell() {
         </div>
       </header>
 
-      <main className="app-main">{tab === 'chat' ? <ChatPage /> : <FilesPage />}</main>
+      <main className="app-main">
+        {tab === 'chat' && <ChatPage />}
+        {tab === 'notes' && <NotesPage />}
+        {tab === 'files' && <FilesPage />}
+      </main>
     </div>
   );
 }
