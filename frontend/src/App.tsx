@@ -23,7 +23,7 @@ function Shell() {
             Czat
           </button>
           <button className={tab === 'files' ? 'active' : ''} onClick={() => setTab('files')}>
-            Pliki
+            Faktury
           </button>
         </nav>
         <div className="app-user">

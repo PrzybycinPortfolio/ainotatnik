@@ -56,3 +56,12 @@ export async function apiUpload<T>(path: string, file: File, fields: Record<stri
   });
   return handle<T>(res);
 }
+
+export async function apiPut<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify(body),
+  });
+  return handle<T>(res);
+}

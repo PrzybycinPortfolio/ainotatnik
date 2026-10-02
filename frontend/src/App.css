@@ -787,3 +787,44 @@
 .markdown tr:nth-child(even) td {
   background: rgba(127, 127, 127, 0.06);
 }
+
+/* ── VAT status (KUP basis) ───────────────────────────────────────────── */
+
+.vat-setting {
+  margin: 0 0 14px;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.vat-setting.unset {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.vat-setting legend {
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.vat-setting label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.vat-setting input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.vat-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--accent);
+}

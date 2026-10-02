@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { apiDelete, apiGet, apiPost, apiUpload } from '../lib/api';
+import { apiDelete, apiGet, apiPost, apiPut, apiUpload } from '../lib/api';
 import { extractFileText } from '../lib/extractText';
 import type { FileRow } from '../types';
 
@@ -60,9 +60,30 @@ export function FilesPage() {
   const filesRef = useRef(files);
   filesRef.current = files;
 
+  // VAT status decides the KUP basis: true → net, false → gross, null → not chosen yet.
+  const [vatPayer, setVatPayer] = useState<boolean | null | undefined>(undefined);
+  const [savingVat, setSavingVat] = useState(false);
+
   useEffect(() => {
     load();
+    apiGet<{ vat_payer: boolean | null }>('/profile')
+      .then((p) => setVatPayer(p.vat_payer))
+      .catch((err) => setError((err as Error).message));
   }, []);
+
+  async function saveVatPayer(value: boolean) {
+    const previous = vatPayer;
+    setVatPayer(value);
+    setSavingVat(true);
+    try {
+      await apiPut('/profile', { vat_payer: value });
+    } catch (err) {
+      setVatPayer(previous);
+      setError((err as Error).message);
+    } finally {
+      setSavingVat(false);
+    }
+  }
 
   useEffect(() => {
     if (retryable.length === 0 || busy) return;
@@ -204,7 +225,7 @@ export function FilesPage() {
   return (
     <div className="files-page">
       <div className="files-header">
-        <h2>Faktury i dokumenty</h2>
+        <h2>Faktury</h2>
         <div className="files-actions">
           <label className={`upload-btn${busy ? ' disabled' : ''}`}>
             Wgraj pliki (PDF / DOCX / TXT)
@@ -227,6 +248,27 @@ export function FilesPage() {
       <p className="files-hint files-hint-top">
         Możesz zaznaczyć wiele plików naraz w oknie wyboru (Ctrl+A, Ctrl lub Shift + klik).
       </p>
+
+      {vatPayer !== undefined && (
+        <fieldset className={`vat-setting${vatPayer === null ? ' unset' : ''}`} disabled={savingVat}>
+          <legend>Rozliczenie VAT — od tego zależy, jak liczony jest KUP</legend>
+          <label>
+            <input type="radio" name="vat" checked={vatPayer === true} onChange={() => saveVatPayer(true)} />
+            <span>
+              <b>Czynny podatnik VAT</b> — KUP liczony z kwot <b>netto</b> (VAT odliczasz)
+            </span>
+          </label>
+          <label>
+            <input type="radio" name="vat" checked={vatPayer === false} onChange={() => saveVatPayer(false)} />
+            <span>
+              <b>Nie jestem vatowcem</b> (np. zwolnienie z VAT) — KUP liczony z kwot <b>brutto</b>
+            </span>
+          </label>
+          {vatPayer === null && (
+            <p className="vat-hint">Nie wybrano — do tego czasu asystent pokaże obie sumy, netto i brutto.</p>
+          )}
+        </fieldset>
+      )}
 
       {progress && (
         <div className="bulk-progress">
