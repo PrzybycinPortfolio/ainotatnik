@@ -47,7 +47,7 @@ export async function processInvoiceFile(
       .from('files')
       .update({
         status: 'error',
-        error_message: 'Nie udało się przetworzyć pliku — asystent AI jest chwilowo niedostępny. Usuń plik i wgraj go ponownie później.',
+        error_message: 'Asystent AI był chwilowo niedostępny. Aplikacja ponowi próbę automatycznie — możesz też kliknąć „Ponów”.',
       })
       .eq('id', fileId);
   }

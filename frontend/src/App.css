@@ -494,3 +494,139 @@
   border: 1px solid #d9484f;
   color: #d9484f;
 }
+
+/* ── Bulk file operations ─────────────────────────────────────────────── */
+
+.upload-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.files-hint-top {
+  margin: -8px 0 12px;
+}
+
+.check-col {
+  width: 32px;
+}
+
+.check-col input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.files-table tr.selected td {
+  background: var(--accent-bg);
+}
+
+.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.row-actions button + button {
+  margin-left: 6px;
+}
+
+.retry-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.retry-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  background: var(--accent-bg);
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.bulk-bar span {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+.bulk-bar button:not(.delete-btn):not(.link-btn) {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--text);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.bulk-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.bulk-progress progress {
+  flex: 1;
+  height: 8px;
+  accent-color: var(--accent);
+}
+
+.bulk-failures {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid #d9484f;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #d9484f;
+}
+
+.bulk-failures-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.bulk-failures-head button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.bulk-failures ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.auto-status {
+  margin: 0 0 12px;
+  color: var(--accent);
+}

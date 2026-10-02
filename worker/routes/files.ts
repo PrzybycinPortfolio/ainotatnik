@@ -15,7 +15,7 @@ files.get('/', async (c) => {
     .from('files')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(50);
+    .limit(1000);
 
   if (error) return c.json({ error: error.message }, 500);
   return c.json(data ?? []);
@@ -89,6 +89,45 @@ files.get('/:id/url', async (c) => {
   const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(fileRow.storage_path, 60);
   if (error) return c.json({ error: error.message }, 500);
   return c.json({ url: data.signedUrl });
+});
+
+// Re-runs the AI steps for a file that failed (e.g. Gemini rate limit during a
+// bulk upload). The browser re-extracts the text from the stored file and sends it.
+files.post('/:id/reprocess', async (c) => {
+  const supabase = c.get('supabase');
+  const id = c.req.param('id');
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return c.json({ error: 'invalid file id' }, 400);
+
+  const body = (await c.req.json().catch(() => null)) as { text?: unknown } | null;
+  if (typeof body?.text !== 'string' || !body.text.trim()) {
+    return c.json({ error: 'missing "text" with the extracted document text' }, 400);
+  }
+
+  const { data: fileRow, error: selectErr } = await supabase
+    .from('files')
+    .select('id, status')
+    .eq('id', id)
+    .maybeSingle();
+  if (selectErr) return c.json({ error: selectErr.message }, 500);
+  if (!fileRow) return c.json({ error: 'file not found' }, 404);
+  if (fileRow.status === 'processing') return c.json({ error: 'file is already being processed' }, 409);
+
+  // Drop any invoice from an earlier run so a retry never double-counts KUP.
+  const { error: invoicesErr } = await supabase.from('invoices').delete().eq('file_id', id);
+  if (invoicesErr) return c.json({ error: invoicesErr.message }, 500);
+
+  const { data: updated, error: updateErr } = await supabase
+    .from('files')
+    .update({ status: 'pending', error_message: null })
+    .eq('id', id)
+    .select()
+    .single();
+  if (updateErr) return c.json({ error: updateErr.message }, 500);
+
+  c.executionCtx.waitUntil(
+    processInvoiceFile(id, body.text.slice(0, MAX_TEXT_CHARS), supabase, c.get('userId'), c.env.GEMINI_API_KEY)
+  );
+  return c.json(updated, 202);
 });
 
 // Deletes the stored object, the invoices extracted from it and the file row.

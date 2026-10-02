@@ -233,8 +233,9 @@
   <h3>Wgrywanie faktury</h3>
   <ol class="steps">
     <li>Przejdź do zakładki <span class="ui">Pliki</span>.</li>
-    <li>Kliknij <span class="ui">Wgraj plik (PDF / DOCX / TXT)</span> i wybierz fakturę. Obsługiwane formaty: PDF, DOCX, TXT, MD — maksymalnie 10 MB.</li>
-    <li>Plik pojawi się na liście ze statusem. Po kilku–kilkunastu sekundach kliknij <span class="ui">Odśwież</span>.</li>
+    <li>Kliknij <span class="ui">Wgraj pliki (PDF / DOCX / TXT)</span> i wybierz faktury — <b>możesz zaznaczyć wiele naraz</b> (Ctrl+A, Ctrl lub Shift + klik), np. 50 faktur z całego miesiąca. Formaty: PDF, DOCX, TXT, MD — do 10 MB każdy.</li>
+    <li>Pasek postępu pokaże „Wgrywanie… 12/50”. Pliki pojawią się na liście, a <b>statusy odświeżają się same</b> — nie trzeba nic klikać.</li>
+    <li>Jeśli przy dużej paczce część plików dostanie status „Błąd” (chwilowe przeciążenie AI), <b>aplikacja sama ponowi je</b> do 3 razy, w odstępach ok. 30–90 s. Zostaw kartę otwartą do końca.</li>
   </ol>
 
   <table>
@@ -249,6 +250,7 @@
   <ul>
     <li><b>Otwórz</b> — kliknij nazwę pliku; otworzy się w nowej karcie. Link jest jednorazowy i ważny 60 sekund, więc nie da się go przekazać innej osobie.</li>
     <li><b>Usuń</b> — przycisk <span class="ui">Usuń</span> przy pliku. Po potwierdzeniu znika plik <b>i dane faktury</b>, więc przestaje być liczona do KUP.</li>
+    <li><b>Wiele naraz</b> — zaznacz pola wyboru przy plikach (lub to w nagłówku, aby zaznaczyć wszystkie). Pojawi się pasek z przyciskami <span class="ui">Usuń zaznaczone</span> i — dla plików z błędem — <span class="ui">Ponów błędne</span>.</li>
   </ul>
 
   <div class="box warn"><b>Skany i zdjęcia</b>Aplikacja czyta tekst z dokumentu. PDF będący samym skanem (zdjęciem kartki) nie ma warstwy tekstowej i nie zostanie odczytany. Najlepiej działają faktury PDF pobrane z systemu sprzedawcy lub KSeF.</div>
@@ -392,7 +394,7 @@
     <tr><td>„Nie udało się odczytać tekstu z pliku”</td><td>To prawdopodobnie skan bez warstwy tekstowej. Użyj PDF wygenerowanego cyfrowo albo skopiuj tekst do pliku TXT.</td></tr>
     <tr><td>„Plik jest za duży”</td><td>Limit to 10 MB. Podziel dokument lub zapisz tylko potrzebne strony.</td></tr>
     <tr><td>„Nieobsługiwany typ pliku”</td><td>Obsługiwane: PDF, DOCX, TXT, MD. Pliki .doc, .xls czy zdjęcia zapisz najpierw jako PDF lub DOCX.</td></tr>
-    <tr><td>Faktura ma status „Błąd”</td><td>Usuń ją przyciskiem <span class="ui">Usuń</span> i wgraj ponownie za chwilę.</td></tr>
+    <tr><td>Faktura ma status „Błąd”</td><td>Aplikacja ponawia takie pliki automatycznie (do 3 razy), gdy karta jest otwarta. Potem kliknij <span class="ui">Ponów</span> przy pliku albo zaznacz kilka i wybierz <span class="ui">Ponów błędne</span>.</td></tr>
     <tr><td>Asystent odmawia odpowiedzi na pytanie</td><td>Sprawdź, czy nie masz dołączonego pliku 📎 — wtedy odpowiada tylko o nim. Odepnij plik (✕) i zapytaj ponownie.</td></tr>
     <tr><td>Wynik KUP wydaje się zbyt niski</td><td>Zapytaj: „Które faktury zostały pominięte i dlaczego?” — część mogła zostać oceniona jako prywatna.</td></tr>
     <tr><td>Nie przyszedł mail z potwierdzeniem konta</td><td>Sprawdź spam; odczekaj kilka minut i spróbuj zarejestrować się ponownie.</td></tr>

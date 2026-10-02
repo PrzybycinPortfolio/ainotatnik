@@ -51,3 +51,4 @@ coverage/
 .wrangler/
 .dev.vars
 !.dev.vars.example
+!frontend/.env.production
