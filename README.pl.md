@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ai-notatnik.pages.dev"><b>Wersja demo →</b></a> ·
+  🌐 <a href="https://ai-notatnik.pages.dev"><b>ai-notatnik.pages.dev</b></a> ·
   <a href="docs/Instrukcja-AI-Notatnik.pdf">Instrukcja użytkownika (PDF)</a> ·
   <a href="README.md">🇬🇧 English version</a>
 </p>
@@ -25,6 +25,11 @@
   <img alt="PostgreSQL + pgvector" src="https://img.shields.io/badge/PostgreSQL_+_pgvector-4169E1?logo=postgresql&logoColor=white" />
   <img alt="Google Gemini" src="https://img.shields.io/badge/Gemini-8E75B2?logo=googlegemini&logoColor=white" />
 </p>
+
+> [!TIP]
+> **Wypróbuj aplikację: [https://ai-notatnik.pages.dev](https://ai-notatnik.pages.dev)**
+>
+> Działa w przeglądarce — bez instalacji. Załóż konto na swój e-mail (**Rejestracja**), potwierdź je i możesz korzystać z czatu, notatek i faktur.
 
 ---
 

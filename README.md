@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ai-notatnik.pages.dev"><b>Live demo →</b></a> ·
+  🌐 <a href="https://ai-notatnik.pages.dev"><b>ai-notatnik.pages.dev</b></a> ·
   <a href="docs/Instrukcja-AI-Notatnik.pdf">User guide (PL, PDF)</a> ·
   <a href="README.pl.md">🇵🇱 Polska wersja</a>
 </p>
@@ -25,6 +25,11 @@
   <img alt="PostgreSQL + pgvector" src="https://img.shields.io/badge/PostgreSQL_+_pgvector-4169E1?logo=postgresql&logoColor=white" />
   <img alt="Google Gemini" src="https://img.shields.io/badge/Gemini-8E75B2?logo=googlegemini&logoColor=white" />
 </p>
+
+> [!TIP]
+> **Try the app live: [https://ai-notatnik.pages.dev](https://ai-notatnik.pages.dev)**
+>
+> Runs in the browser — no installation. Create an account with your e-mail (**Rejestracja**), confirm it, and you can chat, add notes and upload invoices. The interface is in Polish.
 
 ---
 
