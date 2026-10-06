@@ -8,6 +8,9 @@ import './App.css';
 
 type Tab = 'chat' | 'notes' | 'files';
 
+// GitHub's viewer renders the PDF in the browser (the raw URL would download it).
+const GUIDE_URL = 'https://github.com/PrzybycinPortfolio/ainotatnik/blob/master/docs/Instrukcja-AI-Notatnik.pdf';
+
 function Shell() {
   const { session, loading, signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('chat');
@@ -31,6 +34,15 @@ function Shell() {
           </button>
         </nav>
         <div className="app-user">
+          <a
+            className="guide-link"
+            href={GUIDE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Instrukcja użytkownika (PDF, otwiera się w nowej karcie)"
+          >
+            📖 Instrukcja
+          </a>
           <span>{session.user.email}</span>
           <button onClick={signOut}>Wyloguj</button>
         </div>

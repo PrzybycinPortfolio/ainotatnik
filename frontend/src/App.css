@@ -1089,3 +1089,23 @@
     flex-direction: column;
   }
 }
+
+.guide-link {
+  padding: 6px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  background: var(--accent-bg);
+  color: var(--text-h);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.guide-link:hover {
+  border-color: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .app-user > span {
+    display: none;
+  }
+}
